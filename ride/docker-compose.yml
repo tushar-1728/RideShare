@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    command: python server.py
+    restart: always
+    ports:
+      - "8000:5000"
+    links:
+      - mongodb
+    depends_on:
+      - mongodb
+  mongodb:
+    image: mongo:3.0.2
