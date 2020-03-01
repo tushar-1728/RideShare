@@ -263,11 +263,11 @@ def Add_area():
 if __name__ == '__main__':
     # app.debug = True
     # app.run()
-    print("app1")
+    #print("app1")
     client = pymongo.MongoClient('mongodb://mongodb:27017/')
-    print("app2")
-    print(client)
-    dbnames = client.list.database_names()
+    #print("app2")
+    #print(client)
+    dbnames = client.database_names()
     print("app3")
     if "RideShare" in dbnames:
         client.drop_database("RideShare")
