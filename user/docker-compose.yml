@@ -19,10 +19,14 @@ services:
       - "8080:80"
     networks:
       - user_network
+    environment:
+      - TEAM_NAME=CC_0113_0221_0913_1125
   mongodb:
     image: mongo:4.2
     container_name: user_db_container
     networks:
       - user_network
+    environment:
+      - TEAM_NAME=CC_0113_0221_0913_1125
 networks:
   user_network:

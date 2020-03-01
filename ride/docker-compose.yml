@@ -2,14 +2,31 @@ version: '3'
 
 services:
   web:
-    image: ride:latest
+    image: rides:latest
+    container_name: rides_container
     command: python server.py
     restart: always
+    environment:
+      - TEAM_NAME=CC_0113_0221_0913_1125
+    networks:
+      - user_network
+  nginx:
+    image: nginx:stable
+    container_name: rides_nginx_container
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    environment:
+      - TEAM_NAME=CC_0113_0221_0913_1125
     ports:
-      - "8000:5000"
-    links:
-      - mongodb
-    depends_on:
-      - mongodb
+      - "8000:80"
+    networks:
+      - user_network
   mongodb:
     image: mongo:4.2
+    container_name: user_db_container
+    networks:
+      - user_network
+    environment:
+      - TEAM_NAME=CC_0113_0221_0913_1125
+networks:
+  user_network:
