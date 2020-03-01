@@ -50,7 +50,7 @@ def addRide():
             print(0)
             return make_response('',400)
 
-        if requests.get("http://54.224.48.154:8080/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"username", "VALUE":username, "DB":"Users"}).json()["count"] == 0:
+        if requests.get("http://34.229.243.2:8080/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"username", "VALUE":username, "DB":"Users"}).json()["count"] == 0:
             print(1)
             return make_response('',400)
 
@@ -114,7 +114,7 @@ def Join_ride(rideid):
     if username == '' or username == None or rideid == '' or rideid == None:
         return make_response('',400)
 
-    if requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"_id", "VALUE":rideid, "DB":"Rides"}).json()["count"] == 0 or requests.get("http://54.224.48.154:8080/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"username", "VALUE":username, "DB":"Users"}).json()["count"] == 0:
+    if requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"_id", "VALUE":rideid, "DB":"Rides"}).json()["count"] == 0 or requests.get("http://34.229.243.2:8080/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"username", "VALUE":username, "DB":"Users"}).json()["count"] == 0:
         return make_response('',400)
 
     msg = requests.post("http://127.0.0.1:5000/api/v1/db/write", data=json.dumps({"COMMAND":"Update_Ride", "id":int(rideid), "username":username}))
@@ -263,8 +263,12 @@ def Add_area():
 if __name__ == '__main__':
     # app.debug = True
     # app.run()
+    print("app1")
     client = pymongo.MongoClient('mongodb://mongodb:27017/')
-    dbnames = client.list_database_names()
+    print("app2")
+    print(client)
+    dbnames = client.list.database_names()
+    print("app3")
     if "RideShare" in dbnames:
         client.drop_database("RideShare")
     Add_area()

@@ -12,4 +12,4 @@ services:
     depends_on:
       - mongodb
   mongodb:
-    image: mongo:3.0.2
+    image: mongo:4.2
