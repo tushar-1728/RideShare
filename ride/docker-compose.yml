@@ -9,7 +9,7 @@ services:
     environment:
       - TEAM_NAME=CC_0113_0221_0913_1125
     networks:
-      - user_network
+      - rides_network
   nginx:
     image: nginx:stable
     container_name: rides_nginx_container
@@ -20,13 +20,13 @@ services:
     ports:
       - "8000:80"
     networks:
-      - user_network
+      - rides_network
   mongodb:
     image: mongo:4.2
-    container_name: user_db_container
+    container_name: rides_db_container
     networks:
-      - user_network
+      - rides_network
     environment:
       - TEAM_NAME=CC_0113_0221_0913_1125
 networks:
-  user_network:
+  rides_network:
