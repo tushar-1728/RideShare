@@ -2,7 +2,7 @@ version: '3'
 
 services:
   web:
-    build: .
+    image: ride:latest
     command: python server.py
     restart: always
     ports:
