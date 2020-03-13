@@ -4,7 +4,13 @@ import requests
 from datetime import datetime
 import json
 import csv
-app = Flask(__name__)
+
+def create_app():
+    app = Flask(__name__)
+    app.config['count'] = 0
+    return app
+
+app = create_app();
 
 def dbState(collection):
     try:
@@ -24,6 +30,9 @@ def is_sha1(maybe_sha):
         return False
     return True
 
+def add_request_count():
+    app.config['count'] = app.config['count'] + 1
+
 def checkareacode(areacode):
     db, collection_area = dbState("Area")
     if (collection_area.count_documents({"Area No":str(areacode)}) != 0):
@@ -33,6 +42,7 @@ def checkareacode(areacode):
 # api 3
 @app.route("/api/v1/rides",methods=["POST"])
 def addRide():
+    add_request_count()
     req = request.get_json()
     if req == "":
         return make_response('',400)
@@ -50,7 +60,7 @@ def addRide():
             print(0)
             return make_response('',400)
 
-        if requests.get("http://54.85.137.85:8080/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"username", "VALUE":username, "DB":"Users"}).json()["count"] == 0:
+        if requests.get("http://54.85.137.85:80/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"username", "VALUE":username, "DB":"Users"}).json()["count"] == 0:
             print(1)
             return make_response('',400)
 
@@ -68,6 +78,7 @@ def addRide():
 # api 4
 @app.route('/api/v1/rides', methods = ['GET'])
 def list_rides():
+    add_request_count()
     source = request.args.get('source')
     destination = request.args.get('destination')
     message = []
@@ -86,6 +97,7 @@ def list_rides():
 # api 5
 @app.route('/api/v1/rides/<rideid>', methods=['GET'])
 def details_ride(rideid):
+    add_request_count()
     message = {}
     if rideid == '' or rideid == None:
         return make_response('',400)
@@ -103,6 +115,7 @@ def details_ride(rideid):
 # api 6
 @app.route('/api/v1/rides/<rideid>', methods=['POST'])
 def Join_ride(rideid):
+    add_request_count()
     req = request.get_json()
     if req == None:
         return make_response('',400)
@@ -114,7 +127,7 @@ def Join_ride(rideid):
     if username == '' or username == None or rideid == '' or rideid == None:
         return make_response('',400)
 
-    if requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"_id", "VALUE":rideid, "DB":"Rides"}).json()["count"] == 0 or requests.get("http://54.85.137.85:8080/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"username", "VALUE":username, "DB":"Users"}).json()["count"] == 0:
+    if requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"_id", "VALUE":rideid, "DB":"Rides"}).json()["count"] == 0 or requests.get("http://54.85.137.85:80/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"username", "VALUE":username, "DB":"Users"}).json()["count"] == 0:
         return make_response('',400)
 
     msg = requests.post("http://127.0.0.1:5000/api/v1/db/write", data=json.dumps({"COMMAND":"Update_Ride", "id":int(rideid), "username":username}))
@@ -126,6 +139,7 @@ def Join_ride(rideid):
 # api 7
 @app.route('/api/v1/rides/<rideid>', methods=['DELETE'])
 def deleteride(rideid):
+    add_request_count()
     if rideid == '' or rideid == None:
         return make_response('',400)
 
@@ -234,18 +248,21 @@ def db_write():
         return make_response('',200)
 
 #api 10
-@app.route('/api/v1/users', methods=['GET'])
-def read_all():
-    msg = requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"READ_ALL", "DB":"Users"})
-    if(msg.status_code == 204):
-        return make_response('',204)
-    elif(msg.status_code == 200):
-        return make_response(jsonify(msg.json()['readall']), 200)
-
-#api 11
 @app.route('/api/v1/db/clear', methods=['POST'])
 def delete_all():
+    add_request_count()
     requests.post("http://127.0.0.1:5000/api/v1/db/write", data=json.dumps({"COMMAND":"DELETE_ALL"}))
+    return make_response('', 200)
+
+#api 11
+@app.route('/api/v1/_count', methods=['GET'])
+def count_requests():
+    return make_response(jsonify(app.config['count']), 200)
+
+#api 12
+@app.route('/api/v1/_count', methods=['DELETE'])
+def reset_request_count():
+    app.config['count'] = 0
     return make_response('', 200)
 
 def Add_area():
@@ -261,14 +278,8 @@ def Add_area():
         collection.insert_many(readCSV)
 
 if __name__ == '__main__':
-    # app.debug = True
-    # app.run()
-    #print("app1")
     client = pymongo.MongoClient('mongodb://mongodb:27017/')
-    #print("app2")
-    #print(client)
-    dbnames = client.database_names()
-    print("app3")
+    dbnames = client.list_database_names()
     if "RideShare" in dbnames:
         client.drop_database("RideShare")
     Add_area()
