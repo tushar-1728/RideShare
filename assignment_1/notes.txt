@@ -1,0 +1,28 @@
+sudo apt update
+sudo apt install gunicorn nginx
+pip install flask requests
+mkdir myproject cd myproject
+nano a.py //paste the code
+
+create wsgi.py
+from a import app
+if__name__="main":
+        app.run()
+
+gunicorn wsgi:app
+cd /etc/nginx/sites-enabled/
+
+nano myproject
+server {
+    listen 8000;
+    server_name ec2-54-88-206-57.compute-1.amazonaws.com;
+
+location / {
+        proxy_pass http://127.0.0.1:5000;
+   }
+}
+
+sudo nginx -t
+sudo service nginx restart 
+ gunicorn -w 3 -b 127.0.0.1:5000 wsgi:app 
+
