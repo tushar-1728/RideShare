@@ -288,6 +288,7 @@ def Add_area():
 		collection.insert_many(readCSV)
 
 if __name__ == '__main__':
+	print("apple")
 	client = pymongo.MongoClient('mongodb://mongodb:27017/')
 	dbnames = client.list_database_names()
 	if "RideShare" in dbnames:
