@@ -182,7 +182,7 @@ def read_all():
 #api 11
 @app.route('/api/v1/db/clear', methods=['POST'])
 def delete_all():
-	add_request_count()
+	# add_request_count()
 	requests.post("http://127.0.0.1:5000/api/v1/db/write", data=json.dumps({"COMMAND":"DELETE_ALL"}))
 	return make_response('', 200)
 
