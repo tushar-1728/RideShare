@@ -65,8 +65,7 @@ def addRide():
 			return make_response('',400)
 
 		user_list = requests.get(
-		"http://34.239.83.226:80/api/v1/db/read",
-		params={"COMMAND":"EXISTS", "FIELD":"username", "VALUE":username, "DB":"Users"},
+		"http://assgn3-alb-205841133.us-east-1.elb.amazonaws.com/api/v1/users",
 		headers={'Origin': '54.208.115.23'},
 		)
 		print(user_list)
