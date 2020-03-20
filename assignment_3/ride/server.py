@@ -68,10 +68,9 @@ def addRide():
 		"http://assgn3-alb-205841133.us-east-1.elb.amazonaws.com/api/v1/users",
 		headers={'Origin': '54.208.115.23'},
 		)
-		print(type(user_list))
-		print(user_list)
-		# print(1)
-		# return make_response('',400)
+		if(username not in user_list):
+			print(1)
+			return make_response('',400)
 
 		if requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"Area No", "VALUE":source, "DB":"Area"}).json()["count"] == 0 or requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"Area No", "VALUE":destination, "DB":"Area"}).json()["count"] == 0:
 			print(2)
