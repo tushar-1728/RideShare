@@ -64,9 +64,14 @@ def addRide():
 			print(0)
 			return make_response('',400)
 
-		if requests.get("http://34.239.83.226:80/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"username", "VALUE":username, "DB":"Users"}).json()["count"] == 0:
-			print(1)
-			return make_response('',400)
+		user_list = requests.get(
+		"http://34.239.83.226:80/api/v1/db/read",
+		params={"COMMAND":"EXISTS", "FIELD":"username", "VALUE":username, "DB":"Users"},
+		headers={'Origin': '54.208.115.23'},
+		)
+		print(user_list)
+		# print(1)
+		# return make_response('',400)
 
 		if requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"Area No", "VALUE":source, "DB":"Area"}).json()["count"] == 0 or requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"Area No", "VALUE":destination, "DB":"Area"}).json()["count"] == 0:
 			print(2)
