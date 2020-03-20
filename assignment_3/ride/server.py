@@ -68,6 +68,7 @@ def addRide():
 		"http://assgn3-alb-205841133.us-east-1.elb.amazonaws.com/api/v1/users",
 		headers={'Origin': '54.208.115.23'},
 		)
+		print(type(user_list))
 		print(user_list)
 		# print(1)
 		# return make_response('',400)
