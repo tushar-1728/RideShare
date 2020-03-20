@@ -275,6 +275,10 @@ def reset_request_count():
 def count_rides_created():
 	return make_response(jsonify(app.config['ride_count']), 200)
 
+@app.route('/api/v1/rides/health_check', methods=['GET'])
+def health_check():
+	return make_response('', 200)
+
 def Add_area():
 	myclient = pymongo.MongoClient('mongodb://mongodb:27017/')
 	db = myclient["RideShare"]

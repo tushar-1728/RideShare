@@ -197,5 +197,9 @@ def reset_request_count():
 	app.config['count'] = 0
 	return make_response('', 200)
 
+@app.route('/api/v1/users/health_check', methods=['GET'])
+def health_check():
+	return make_response('', 200)
+
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', debug=True)
