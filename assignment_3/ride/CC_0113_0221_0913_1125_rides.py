@@ -73,7 +73,7 @@ def addRide():
 
 		requests.post("http://127.0.0.1:5000/api/v1/db/write", data=json.dumps({"COMMAND":"INSERT", "FIELDS":["created_by","users","timestamp","source","destination"], "VALUES":[username,[username],timestamp,source,destination], "DB":"Rides"}))
 
-		app.config['ride_count'] = app.config['ride_count'] + 1
+		add_ride_count()
 		return make_response('',201)
 	except:
 		return make_response('',400)
@@ -141,8 +141,7 @@ def Join_ride(rideid):
 	msg = requests.post("http://127.0.0.1:5000/api/v1/db/write", data=json.dumps({"COMMAND":"Update_Ride", "id":int(rideid), "username":username}))
 	if msg.status_code == 400:
 		return make_response('',400)
-
-	app.config['ride_count'] = app.config['ride_count'] + 1
+	add_ride_count()
 	return make_response('',200)
 
 
@@ -157,8 +156,6 @@ def deleteride(rideid):
 		return make_response('',400)
 
 	requests.post("http://127.0.0.1:5000/api/v1/db/write", data=json.dumps({"COMMAND":"DELETE", "FIELD":"_id", "VALUE":int(rideid), "DB":"Rides"}))
-	if(app.config['ride_count'] != 0):
-		app.config['ride_count'] = app.config['ride_count'] - 1
 	return make_response('',200)
 
 
@@ -292,13 +289,16 @@ def Add_area():
 	with open(r"AreaNameEnum.csv","r") as f:
 		readCSV = list(csv.DictReader(f))
 		for i in range(0, len(readCSV)):
+			# readCSV[i] = dict(readCSV[i])
 			readCSV[i]['_id'] = int(readCSV[i]['_id'])
 			readCSV[i]['Area No'] = int(readCSV[i]['Area No'])
 		collection.insert_many(readCSV)
 
 if __name__ == '__main__':
+	print("apple", file=sys.stderr)
 	client = pymongo.MongoClient('mongodb://mongodb:27017/')
 	dbnames = client.list_database_names()
+	print("ban", file=sys.stderr)
 	if "RideShare" in dbnames:
 		client.drop_database("RideShare")
 	Add_area()

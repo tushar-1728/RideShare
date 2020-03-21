@@ -8,25 +8,12 @@ services:
     restart: always
     environment:
       - TEAM_NAME=CC_0113_0221_0913_1125
-    networks:
-      - rides_network
-  nginx:
-    image: nginx:stable
-    container_name: rides_nginx_container
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-    environment:
-      - TEAM_NAME=CC_0113_0221_0913_1125
+    depends_on:
+      - mongodb
     ports:
-      - "80:80"
-    networks:
-      - rides_network
+      - "80:5000"
   mongodb:
     image: mongo:4.2
     container_name: rides_db_container
-    networks:
-      - rides_network
     environment:
       - TEAM_NAME=CC_0113_0221_0913_1125
-networks:
-  rides_network:
