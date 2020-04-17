@@ -68,7 +68,7 @@ def addRide():
 			print(2)
 			return make_response('',400)
 
-		user_list = requests.get("http://localhost:8000/api/v1/users", headers={'Origin': '54.208.115.23'}).json()
+		user_list = requests.get("http://34.239.83.226:80/api/v1/users", headers={'Origin': '54.208.115.23'}).json()
 		if(username not in user_list):
 			print(3)
 			return make_response('',400)
@@ -143,7 +143,7 @@ def Join_ride(rideid):
 		print(2)
 		return make_response('',400)
 
-	user_list = requests.get("http://localhost:8000/api/v1/users",headers={'Origin': '54.208.115.23'}).json()
+	user_list = requests.get("http://34.239.83.226:80/api/v1/users",headers={'Origin': '54.208.115.23'}).json()
 	if(username not in user_list):
 		print(3)
 		print(user_list)
@@ -168,7 +168,7 @@ def deleteride(rideid):
 		return make_response('',400)
 
 	requests.post("http://localhost:5000/api/v1/db/write", data=json.dumps({"COMMAND":"DELETE", "FIELD":"_id", "VALUE":int(rideid), "DB":"Rides"}))
-	sub_ride_count()
+	# sub_ride_count()
 	return make_response('',200)
 
 
