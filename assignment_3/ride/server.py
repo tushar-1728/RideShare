@@ -323,4 +323,4 @@ if __name__ == '__main__':
 	db, collection = dbState("RideCount")
 	collection.insert_one({"_id" : "ride", "count" : 0})
 	collection.insert_one({"_id" : "request", "count" : 0})
-	app.run(host='localhost', port = '5000', debug = False)
+	app.run(host='0.0.0.0', debug = False)

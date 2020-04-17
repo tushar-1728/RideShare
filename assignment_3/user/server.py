@@ -209,4 +209,4 @@ if __name__ == '__main__':
 		db["UserCount"].drop()
 	db, collection = dbState("UserCount")
 	collection.insert_one({"_id" : 0, "count" : 0})
-	app.run(host='localhost', port = '5000', debug = False)
+	app.run(host='0.0.0.0', debug = False)
