@@ -6,13 +6,7 @@ import json
 import csv
 import sys
 
-def create_app():
-	app = Flask(__name__)
-	app.config['count'] = 0
-	app.config['ride_count'] = 0
-	return app
-
-app = create_app();
+app = Flask(__name__)
 
 def dbState(collection):
 	try:
@@ -33,10 +27,18 @@ def is_sha1(maybe_sha):
 	return True
 
 def add_request_count():
-	app.config['count'] = app.config['count'] + 1
+	db, collection = dbState("RideCount")
+	collection.update_one({'_id': "request"}, {'$inc': {'count': 1}})
 
 def add_ride_count():
-	app.config['ride_count'] = app.config['ride_count'] + 1
+	db, collection = dbState("RideCount")
+	collection.update_one({'_id': "ride"}, {'$inc': {'count': 1}})
+
+def sub_ride_count():
+	db, collection = dbState("RideCount")
+	count = collection.find_one({"_id": "ride"})["count"]
+	if(count > 0):
+		collection.update_one({'_id': "ride"}, {'$inc': {'count': -1}})
 
 def checkareacode(areacode):
 	db, collection_area = dbState("Area")
@@ -56,26 +58,31 @@ def addRide():
 	destination = req['destination']
 	timestamp = req['timestamp']
 	if username == '' or username == None or source == '' or source == None or destination == '' or destination == None or timestamp == '' or timestamp == None:
+		print(1)
 		return make_response('',400)
 	
 	try:
 		datetime.strptime(timestamp,"%d-%m-%Y:%S-%M-%H")
 
 		if datetime.strptime(datetime.now().strftime("%d-%m-%Y:%S-%M-%H"),"%d-%m-%Y:%S-%M-%H") >= datetime.strptime(timestamp,"%d-%m-%Y:%S-%M-%H"):
+			print(2)
 			return make_response('',400)
 
-		user_list = requests.get("http://assgn3-alb-205841133.us-east-1.elb.amazonaws.com/api/v1/users", headers={'Origin': '54.208.115.23'}).json()
+		user_list = requests.get("http://localhost:8000/api/v1/users", headers={'Origin': '54.208.115.23'}).json()
 		if(username not in user_list):
+			print(3)
 			return make_response('',400)
 
-		if requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"Area No", "VALUE":source, "DB":"Area"}).json()["count"] == 0 or requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"Area No", "VALUE":destination, "DB":"Area"}).json()["count"] == 0:
+		if requests.get("http://localhost:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"Area No", "VALUE":source, "DB":"Area"}).json()["count"] == 0 or requests.get("http://localhost:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"Area No", "VALUE":destination, "DB":"Area"}).json()["count"] == 0:
+			print(4)
 			return make_response('',400)
 
-		requests.post("http://127.0.0.1:5000/api/v1/db/write", data=json.dumps({"COMMAND":"INSERT", "FIELDS":["created_by","users","timestamp","source","destination"], "VALUES":[username,[username],timestamp,source,destination], "DB":"Rides"}))
+		requests.post("http://localhost:5000/api/v1/db/write", data=json.dumps({"COMMAND":"INSERT", "FIELDS":["created_by","users","timestamp","source","destination"], "VALUES":[username,[username],timestamp,source,destination], "DB":"Rides"}))
 
-		app.config['ride_count'] = app.config['ride_count'] + 1
+		add_ride_count()
 		return make_response('',201)
 	except:
+		print(5)
 		return make_response('',400)
 
 
@@ -89,10 +96,10 @@ def list_rides():
 	if source == '' or source == None or destination == None or destination == '':
 		return make_response('',400)
 
-	if requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"Area No", "VALUE":source, "DB":"Area"}).json()["count"] == 0 or requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"Area No", "VALUE":destination, "DB":"Area"}).json()["count"] == 0:
+	if requests.get("http://localhost:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"Area No", "VALUE":source, "DB":"Area"}).json()["count"] == 0 or requests.get("http://localhost:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"Area No", "VALUE":destination, "DB":"Area"}).json()["count"] == 0:
 			return make_response('',400)
 
-	res = requests.get('http://127.0.0.1:5000/api/v1/db/read',params={'COMMAND':'Upcoming','source':source,'destination':destination})
+	res = requests.get('http://localhost:5000/api/v1/db/read',params={'COMMAND':'Upcoming','source':source,'destination':destination})
 	if res.status_code == 204:
 		return make_response('',204)
 	return make_response(jsonify(res.json()['upcoming']),200)
@@ -106,10 +113,10 @@ def details_ride(rideid):
 	if rideid == '' or rideid == None:
 		return make_response('',400)
 
-	if requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"_id", "VALUE":rideid, "DB":"Rides"}).json()["count"] == 0:
+	if requests.get("http://localhost:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"_id", "VALUE":rideid, "DB":"Rides"}).json()["count"] == 0:
 		return make_response('',400)
 
-	message = requests.get('http://127.0.0.1:5000/api/v1/db/read',params={'COMMAND':'Ride_Details','id':rideid}).json()
+	message = requests.get('http://localhost:5000/api/v1/db/read',params={'COMMAND':'Ride_Details','id':rideid}).json()
 	message = dict(message)
 	message["RideID"] = message["_id"]
 	del message["_id"]
@@ -129,20 +136,24 @@ def Join_ride(rideid):
 	username = req["username"]
 
 	if username == '' or username == None or rideid == '' or rideid == None:
+		print(1)
 		return make_response('',400)
 
-	if requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"_id", "VALUE":rideid, "DB":"Rides"}).json()["count"] == 0:
+	if requests.get("http://localhost:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"_id", "VALUE":rideid, "DB":"Rides"}).json()["count"] == 0:
+		print(2)
 		return make_response('',400)
 
-	user_list = requests.get("http://assgn3-alb-205841133.us-east-1.elb.amazonaws.com/api/v1/users",headers={'Origin': '54.208.115.23'})
+	user_list = requests.get("http://localhost:8000/api/v1/users",headers={'Origin': '54.208.115.23'}).json()
 	if(username not in user_list):
+		print(3)
+		print(user_list)
 		return make_response('',400)
 
-	msg = requests.post("http://127.0.0.1:5000/api/v1/db/write", data=json.dumps({"COMMAND":"Update_Ride", "id":int(rideid), "username":username}))
+	msg = requests.post("http://localhost:5000/api/v1/db/write", data=json.dumps({"COMMAND":"Update_Ride", "id":int(rideid), "username":username}))
 	if msg.status_code == 400:
+		print(4)
 		return make_response('',400)
 
-	app.config['ride_count'] = app.config['ride_count'] + 1
 	return make_response('',200)
 
 
@@ -153,12 +164,11 @@ def deleteride(rideid):
 	if rideid == '' or rideid == None:
 		return make_response('',400)
 
-	if requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"_id", "VALUE":rideid, "DB":"Rides"}).json()["count"] == 0:
+	if requests.get("http://localhost:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"_id", "VALUE":rideid, "DB":"Rides"}).json()["count"] == 0:
 		return make_response('',400)
 
-	requests.post("http://127.0.0.1:5000/api/v1/db/write", data=json.dumps({"COMMAND":"DELETE", "FIELD":"_id", "VALUE":int(rideid), "DB":"Rides"}))
-	if(app.config['ride_count'] != 0):
-		app.config['ride_count'] = app.config['ride_count'] - 1
+	requests.post("http://localhost:5000/api/v1/db/write", data=json.dumps({"COMMAND":"DELETE", "FIELD":"_id", "VALUE":int(rideid), "DB":"Rides"}))
+	sub_ride_count()
 	return make_response('',200)
 
 
@@ -261,25 +271,30 @@ def db_write():
 #api 10
 @app.route('/api/v1/db/clear', methods=['POST'])
 def delete_all():
-	requests.post("http://127.0.0.1:5000/api/v1/db/write", data=json.dumps({"COMMAND":"DELETE_ALL"}))
+	requests.post("http://localhost:5000/api/v1/db/write", data=json.dumps({"COMMAND":"DELETE_ALL"}))
 	return make_response('', 200)
 
 #api 11
 @app.route('/api/v1/_count', methods=['GET'])
 def count_requests():
-	return make_response(jsonify(app.config['count']), 200)
+	db, collection = dbState("RideCount")
+	count = collection.find_one({"_id" : "request"})["count"]
+	return make_response(jsonify(count), 200)
 
 #api 12
 @app.route('/api/v1/_count', methods=['DELETE'])
 def reset_request_count():
-	app.config['count'] = 0
+	db, collection = dbState("RideCount")
+	collection.update_one({'_id': "request"}, {'$set': {'count': 0}})
 	return make_response('', 200)
 
 #api 13
 @app.route('/api/v1/rides/count', methods=['GET'])
 def count_rides_created():
 	add_request_count()
-	return make_response(jsonify(app.config['ride_count']), 200)
+	db, collection = dbState("RideCount")
+	count = collection.find_one({"_id" : "ride"})["count"]
+	return make_response(jsonify(count), 200)
 
 @app.route('/api/v1/rides/health_check', methods=['GET'])
 def health_check():
@@ -300,6 +315,12 @@ if __name__ == '__main__':
 	client = pymongo.MongoClient('mongodb://mongodb:27017/')
 	dbnames = client.list_database_names()
 	if "RideShare" in dbnames:
-		client.drop_database("RideShare")
+		db = client["RideShare"]
+		db["Rides"].drop()
+		db["RideCount"].drop()
+		db["Area"].drop()
 	Add_area()
-	app.run(host='0.0.0.0', debug = True)
+	db, collection = dbState("RideCount")
+	collection.insert_one({"_id" : "ride", "count" : 0})
+	collection.insert_one({"_id" : "request", "count" : 0})
+	app.run(host='localhost', port = '5000', debug = False)
