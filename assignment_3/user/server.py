@@ -6,12 +6,7 @@ import json
 import csv
 import sys
 
-def create_app():
-	app = Flask(__name__)
-	app.config['count'] = 0
-	return app
-
-app = create_app();
+app = Flask(__name__)
 
 def dbState(collection):
 	try:
@@ -32,7 +27,8 @@ def is_sha1(maybe_sha):
 	return True
 
 def add_request_count():
-	app.config['count'] = app.config['count'] + 1
+	db, collection = dbState("UserCount")
+	collection.update_one({'_id': 0}, {'$inc': {'count': 1}})
 
 # api 1
 @app.route('/api/v1/users', methods=['PUT'])
@@ -66,10 +62,10 @@ def deleteuser(username):
 	if username == '' or username == None:
 		return make_response('',400)
 
-	if (requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"username", "VALUE":username, "DB":"Users"})).json()["count"] == 0:
+	if (requests.get("http://localhost:5000/api/v1/db/read", params={"COMMAND":"EXISTS", "FIELD":"username", "VALUE":username, "DB":"Users"})).json()["count"] == 0:
 		return make_response('',400)
 
-	requests.post("http://127.0.0.1:5000/api/v1/db/write", data=json.dumps({"COMMAND":"DELETE", "FIELD":"username", "VALUE":username, "DB":"Users"}))
+	requests.post("http://localhost:5000/api/v1/db/write", data=json.dumps({"COMMAND":"DELETE", "FIELD":"username", "VALUE":username, "DB":"Users"}))
 
 	return make_response('',200)
 
@@ -173,7 +169,7 @@ def db_write():
 @app.route('/api/v1/users', methods=['GET'])
 def read_all():
 	add_request_count()
-	msg = requests.get("http://127.0.0.1:5000/api/v1/db/read", params={"COMMAND":"READ_ALL", "DB":"Users"})
+	msg = requests.get("http://localhost:5000/api/v1/db/read", params={"COMMAND":"READ_ALL", "DB":"Users"})
 	if(msg.status_code == 204):
 		return make_response('',204)
 	elif(msg.status_code == 200):
@@ -183,18 +179,21 @@ def read_all():
 @app.route('/api/v1/db/clear', methods=['POST'])
 def delete_all():
 	# add_request_count()
-	requests.post("http://127.0.0.1:5000/api/v1/db/write", data=json.dumps({"COMMAND":"DELETE_ALL"}))
+	requests.post("http://localhost:5000/api/v1/db/write", data=json.dumps({"COMMAND":"DELETE_ALL"}))
 	return make_response('', 200)
 
 #api 12
 @app.route('/api/v1/_count', methods=['GET'])
 def count_requests():
-	return make_response(jsonify(app.config['count']), 200)
+	db, collection = dbState("UserCount")
+	count = collection.find_one({"_id" : 0})["count"]
+	return make_response(jsonify(count), 200)
 
 #api 13
 @app.route('/api/v1/_count', methods=['DELETE'])
 def reset_request_count():
-	app.config['count'] = 0
+	db, collection = dbState("UserCount")
+	collection.update_one({'_id': 0}, {'$set': {'count': 0}})
 	return make_response('', 200)
 
 @app.route('/api/v1/users/health_check', methods=['GET'])
@@ -202,4 +201,12 @@ def health_check():
 	return make_response('', 200)
 
 if __name__ == '__main__':
-	app.run(host='0.0.0.0', debug = True)
+	client = pymongo.MongoClient('mongodb://mongodb:27017/')
+	dbnames = client.list_database_names()
+	if "RideShare" in dbnames:
+		db = client["RideShare"]
+		db["Users"].drop()
+		db["UserCount"].drop()
+	db, collection = dbState("UserCount")
+	collection.insert_one({"_id" : 0, "count" : 0})
+	app.run(host='localhost', port = '5000', debug = False)
