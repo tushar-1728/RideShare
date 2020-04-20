@@ -1,0 +1,27 @@
+version: '3.5'
+
+services:
+  users_web:
+    image: users:latest
+    container_name: users_container
+    command: python server.py
+    restart: always
+    networks:
+      - users_network
+    environment:
+      - TEAM_NAME=CC_0113_0221_0913_1125
+    depends_on:
+      - users_mongodb
+    ports:
+      - "80:5000"
+  users_mongodb:
+    image: mongo:4.2
+    container_name: users_db_container
+    environment:
+      - TEAM_NAME=CC_0113_0221_0913_1125
+    networks:
+      - users_network
+networks:
+  users_network:
+    external:
+      name: cc_network

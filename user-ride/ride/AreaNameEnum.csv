@@ -1,0 +1,199 @@
+_id,Area No,Area Name
+1,1,Kempegowda Ward
+2,2,Chowdeswari Ward
+3,3,Atturu
+4,4,Yelahanka Satellite Town
+5,5,Jakkuru
+6,6,Thanisandra
+7,7,Byatarayanapura
+8,8,Kodigehalli
+9,9,Vidyaranyapura
+10,10,Dodda Bommasandra
+11,11,Kuvempu Nagar
+12,12,Shettihalli
+13,13,Mallasandra
+14,14,Bagalakunte
+15,15,T Dasarahalli
+16,16,Jalahalli
+17,17,J P Park
+18,18,Radhakrishna Temple Ward
+19,19,SanJayanagar
+20,20,Ganga Nagar
+21,21,Hebbala
+22,22,Vishwanath Nagenahalli
+23,23,Nagavara
+24,24,HBR Layout
+25,25,Horamavu
+26,26,Ramamurthy Nagar
+27,27,Banasavadi
+28,28,Kammanahalli
+29,29,Kacharkanahalli
+30,30,Kadugondanahalli
+31,31,Kushal Nagar
+32,32,Kaval Bairasandra
+33,33,Manorayana Palya
+34,34,Gangenahalli
+35,35,Aramane Nagara
+36,36,Mattikere
+37,37,Yeshwanthpura
+38,38,HMT Ward
+39,39,Chokkasandra
+40,40,Dodda Bidarakallu
+41,41,Peenya Industrial Area
+42,42,Lakshmi Devi Nagar
+43,43,Nandini Layout
+44,44,Marappana Palya
+45,45,Malleshwaram
+46,46,Jayachamarajendra Nagar
+47,47,Devara Jeevanahalli
+48,48,Muneshwara Nagar
+49,49,Lingarajapura
+50,50,Benniganahalli
+51,51,Vijnanapura
+52,52,KR Puram
+53,53,Basavanapura
+54,54,Hudi
+55,55,Devasandra
+56,56,A Narayanapura
+57,57,C.V. Raman Nagar
+58,58,New Tippa Sandra
+59,59,Maruthi Seva Nagar
+60,60,Sagayara Puram
+61,61,SK Garden
+62,62,Ramaswamy Palya
+63,63,Jaya Mahal
+64,64,Raj Mahal Guttahalli
+65,65,Kadu Malleshwar Ward
+66,66,Subramanya Nagar
+67,67,Nagapura
+68,68,Mahalakshmipuram
+69,69,Laggere
+70,70,Rajagopal Nagar
+71,71,Hegganahalli
+72,72,Herohalli
+73,73,Kottegepalya
+74,74,Shakthi Ganapathi Nagar
+75,75,Shankar Matt
+76,76,Gayithri Nagar
+77,77,Dattatreya Temple Ward
+78,78,Pulakeshi Nagar
+79,79,Sarvagna Nagar
+80,80,Hoysala Nagar
+81,81,Vijnana Nagar
+82,82,Garudachar palya
+83,83,Kadugodi
+84,84,Hagadur
+85,85,Dodda Nekkundi
+86,86,Marathahalli
+87,87,HAL Airport
+88,88,Jeevanbhima Nagar
+89,89,Jogupalya
+90,90,Halsoor
+91,91,Bharathi Nagar
+92,92,Shivaji Nagar
+93,93,Vasanth Nagar
+94,94,Gandhi Nagar
+95,95,Subhash Nagar
+96,96,Okalipuram
+97,97,Dayananda Nagar
+98,98,Prakash Nagar
+99,99,Rajaji Nagar
+100,100,Basaveshwara Nagar
+101,101,Kamakshipalya
+102,102,Vrisahbhavathi Nagar
+103,103,Kaveripura
+104,104,Govindaraja Nagar
+105,105,Agrahara Dasarahalli
+106,106,Dr.Raj Kumar Ward
+107,107,Shiva Nagar
+108,108,Sri Rama Mandir Ward
+109,109,Chickpete
+110,110,Sampangiram Nagar
+111,111,Shantala Nagar
+112,112,Domlur
+113,113,Konena Agrahara
+114,114,Agaram
+115,115,Vannar Pet
+116,116,Nilasandra
+117,117,Shanthi Nagar
+118,118,Sudham Nagar
+119,119,Dharmaraya Swamy Temple
+120,120,Cottonpete
+121,121,Binni Pete
+122,122,Kempapura Agrahara
+123,123,ViJayanagar
+124,124,Hosahalli
+125,125,Marenahalli
+126,126,Maruthi Mandir Ward
+127,127,Mudalapalya
+128,128,Nagarabhavi
+129,129,Jnana Bharathi Ward
+130,130,Ullalu
+131,131,Nayandahalli
+132,132,Attiguppe
+133,133,Hampi Nagar
+134,134,Bapuji Nagar
+135,135,Padarayanapura
+136,136,Jagajivanaram Nagar
+137,137,Rayapuram
+138,138,Chelavadi Palya
+139,139,KR Market
+140,140,Chamraja Pet
+141,141,Azad Nagar
+142,142,Sunkenahalli
+143,143,Vishveshwara Puram
+144,144,Siddapura
+145,145,Hombegowda Nagar
+146,146,Lakkasandra
+147,147,Adugodi
+148,148,Ejipura
+149,149,Varthur
+150,150,Bellanduru
+151,151,Koramangala
+152,152,Suddagunte Palya
+153,153,Jayanagar
+154,154,Basavanagudi
+155,155,Hanumanth Nagar
+156,156,Sri Nagar
+157,157,Gali Anjenaya Temple Ward
+158,158,Deepanjali Nagar
+159,159,Kengeri
+160,160,Raja Rajeshawari Nagar
+161,161,Hosakerehalli
+162,162,Giri Nagar
+163,163,Katriguppe
+164,164,Vidya Peeta Ward
+165,165,Ganesh Mandir Ward
+166,166,Kari Sandra
+167,167,Yediyur
+168,168,Pattabhi Ram Nagar
+169,169,Byra Sandra
+170,170,Jayanagar East
+171,171,Gurappana Palya
+172,172,Madivala
+173,173,Jakka Sandra
+174,174,HSR Layout
+175,175,Bommanahalli
+176,176,BTM Layout
+177,177,JP Nagar
+178,178,Sarakki
+179,179,Shakambari Narar
+180,180,Banashankari Temple Ward
+181,181,Kumara Swamy Layout
+182,182,Padmanabha Nagar
+183,183,Chikkala Sandra
+184,184,Uttarahalli
+185,185,Yelchenahalli
+186,186,Jaraganahalli
+187,187,Puttenahalli
+188,188,Bilekhalli
+189,189,Honga Sandra
+190,190,Mangammana Palya
+191,191,Singa Sandra
+192,192,Begur
+193,193,Arakere
+194,194,Gottigere
+195,195,Konankunte
+196,196,Anjanapura
+197,197,Vasanthpura
+198,198,Hemmigepura

@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../handson3"
+		},
+		{
+			"path": "../rabbitmq"
+		}
+	],
+	"settings": {}
+}
