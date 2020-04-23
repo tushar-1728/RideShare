@@ -2,6 +2,7 @@ version: '3.5'
 
 services:
   rides_web:
+    build: .
     image: rides:latest
     container_name: rides_container
     command: python server.py
@@ -10,17 +11,8 @@ services:
       - rides-network
     environment:
       - TEAM_NAME=CC_0113_0221_0913_1125
-    depends_on:
-      - rides_mongodb
     ports:
       - "8080:5000"
-  rides_mongodb:
-    image: mongo:4.2
-    container_name: rides_db_container
-    networks:
-      - rides-network
-    environment:
-      - TEAM_NAME=CC_0113_0221_0913_1125
 
 networks:
   rides-network:

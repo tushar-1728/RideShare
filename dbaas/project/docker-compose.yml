@@ -4,16 +4,17 @@ services:
   rmq:
     image: rabbitmq:3.8.3-alpine
     container_name: rmq_container
+    ports:
+      - "15672:15672"
+      - "5672:5672"
     networks:
       - orch-network
-    ports:
-      - 15672:15672
-      - 5672:5672
     environment:
       - TEAM_NAME=CC_0113_0221_0913_1125
-    command: rabbitmq-plugins enable rabbitmq_management
+    # command: sh -c "rabbitmq-plugins enable rabbitmq_management"
 
   orchestrator:
+    build: .
     image: orch:latest
     container_name: orch_container
     networks:
@@ -22,12 +23,41 @@ services:
       - "8000:5000"
     environment:
       - TEAM_NAME=CC_0113_0221_0913_1125
-    command: sh -c "python zk_orch.py"
+    command: sh -c "sleep 20 && python zk_orch.py"
+    volumes:
+        - .:/code
+    depends_on:
+        - worker
+        - rmq
+    links:
+      - rmq
+    # restart: on-failure
+  
+  ride_share-mongodb:
+    image: mongo:4.2
+    container_name: db_container
+    networks:
+      - orch-network
+    environment:
+      - TEAM_NAME=CC_0113_0221_0913_1125
+
+  worker:
+    build: .
+    image: worker:latest
+    container_name: worker_container
+    networks:
+      - orch-network
+    environment:
+      - TEAM_NAME=CC_0113_0221_0913_1125
+    command: sh -c "sleep 20 && python worker.py"
     volumes:
         - .:/code
     depends_on:
         - rmq
-    restart: on-failure
+        - ride_share-mongodb
+    links:
+      - rmq
+    # restart: on-failure
 
 networks:
   orch-network:

@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify, make_response, redirect
-import pymongo
 import requests
 from datetime import datetime
 import json
@@ -7,32 +6,6 @@ import csv
 import sys
 
 app = Flask(__name__)
-
-def dbState(collection):
-	try:
-		myclient = pymongo.MongoClient('mongodb://rides_mongodb:27017/')
-	except:
-		return False,False
-	db = myclient["RideShare"]
-	collection = db[collection]
-	return collection
-
-def checkareacode(areacode):
-	collection_area = dbState("Area")
-	if (collection_area.count_documents({"Area No":str(areacode)}) != 0):
-		return True
-	return False
-
-def Add_area():
-	myclient = pymongo.MongoClient('mongodb://rides_mongodb:27017/')
-	db = myclient["RideShare"]
-	collection = db["Area"]
-	with open(r"AreaNameEnum.csv","r") as f:
-		readCSV = list(csv.DictReader(f))
-		for i in range(0, len(readCSV)):
-			readCSV[i]['_id'] = int(readCSV[i]['_id'])
-			readCSV[i]['Area No'] = int(readCSV[i]['Area No'])
-		collection.insert_many(readCSV)
 
 # api 3
 @app.route("/api/v1/rides",methods=["POST"])
@@ -174,7 +147,7 @@ def count_requests():
 #api 12
 @app.route('/api/v1/_count', methods=['DELETE'])
 def reset_request_count():
-	requests.post("http://orchestrator:5000/api/v1/db/write", data=json.dumps({"ORIGIN":"RIDE", "COMMAND":"DELETE_REQUEST_COUNT"}))
+	requests.post("http://orchestrator:5000/api/v1/db/write", data=json.dumps({"ORIGIN":"RIDE", "COMMAND":"RESET_REQUEST_COUNT"}))
 	return make_response('', 200)
 
 #api 13

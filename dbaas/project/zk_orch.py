@@ -7,128 +7,66 @@ import csv
 import sys
 import time
 import pika
+import uuid
 
-# connection = pika.BlockingConnection(
-# 	pika.ConnectionParameters(host='rmq'))
-# channel = connection.channel()
+class RpcClient(object):
+	def __init__(self):
+		self.connection = pika.BlockingConnection(
+			pika.ConnectionParameters(host='rmq'))
+
+		self.channel = self.connection.channel()
+
+		result = self.channel.queue_declare(queue='responseQ')
+		self.callback_queue = result.method.queue
+
+		self.channel.basic_consume(
+			queue=self.callback_queue,
+			on_message_callback=self.on_response,
+			auto_ack=True)
+
+	def on_response(self, ch, method, props, body):
+		if self.corr_id == props.correlation_id:
+			# ch.basic_ack(delivery_tag=method.delivery_tag)
+			self.response = body
+
+	def read_call(self, params):
+		self.response = None
+		self.corr_id = str(uuid.uuid4())
+		self.channel.basic_publish(
+			exchange='',
+			routing_key='readQ',
+			properties=pika.BasicProperties(
+				reply_to=self.callback_queue,
+				correlation_id=self.corr_id,
+			),
+			body=params
+		)
+		while self.response is None:
+			self.connection.process_data_events()
+		return self.response
+
+	def write_call(self, params):
+		self.response = None
+		self.corr_id = str(uuid.uuid4())
+		self.channel.basic_publish(
+			exchange='',
+			routing_key='writeQ',
+			properties=pika.BasicProperties(
+				reply_to=self.callback_queue,
+				correlation_id=self.corr_id,
+			),
+			body=params
+		)
+		while self.response is None:
+			self.connection.process_data_events()
+		return self.response
+
+
+rpc_client = RpcClient()
+
+
 
 app = Flask(__name__)
-
-def dbState(collection):
-	try:
-		myclient = pymongo.MongoClient('mongodb://rides_mongodb:27017/')
-	except:
-		return False,False
-	db = myclient["RideShare"]
-	collection = db[collection]
-	return collection
-
-
-def Add_area():
-	myclient = pymongo.MongoClient('mongodb://rides_mongodb:27017/')
-	db = myclient["RideShare"]
-	collection = db["Area"]
-	with open(r"AreaNameEnum.csv","r") as f:
-		readCSV = list(csv.DictReader(f))
-		for i in range(0, len(readCSV)):
-			readCSV[i]['_id'] = int(readCSV[i]['_id'])
-			readCSV[i]['Area No'] = int(readCSV[i]['Area No'])
-		collection.insert_many(readCSV)
-
-
-def get_upcoming_rides(source, destination):
-	message = []
-	collection = dbState('Rides')
-	for rides in collection.find({"source":source,"destination":destination},{"_id":1,"created_by":1,"timestamp":1}):
-		if datetime.strptime(datetime.now().strftime("%d-%m-%Y:%S-%M-%H"),"%d-%m-%Y:%S-%M-%H") < datetime.strptime(rides["timestamp"],"%d-%m-%Y:%S-%M-%H"):
-			rides = {
-				"rideId": rides["_id"],
-				"username": rides["created_by"],
-				"timestamp":rides["timestamp"]
-			}
-			message.append(rides)
-	return message
-
-
-def entry_exists(collection_name, field, val):
-	collection = dbState(collection_name)
-	try:
-		val = int(val)
-	except:
-		val = str(val)
-	data = {field: val}
-	return json.dumps({"count":collection.count_documents(data)})
-
-
-def get_ride_details(id):
-	collection = dbState('Rides')
-	return json.dumps(collection.find_one({'_id':int(id)}))
-
-def read_requet_count_ride():
-	collection = dbState("RideCount")
-	count = collection.find_one({"_id" : "request"})["count"]
-	return json.dumps({"count":count})
-
-
-def read_ride_count():
-	collection = dbState("RideCount")
-	count = collection.find_one({"_id" : "ride"})["count"]
-	return json.dumps({"count":count})
-
-
-def create_ride(collection_name, data):
-	collection = dbState(collection_name)
-	if collection.count_documents({"_id":"Last_Id"}) == 0:
-		collection.insert_one({"_id":"Last_Id","Last_Id":0})
-	Last_Id = collection.find_one({"_id":"Last_Id"})["Last_Id"] + 1
-	data["_id"] = Last_Id
-	collection.insert_one(data)
-	collection.update_one({"_id":"Last_Id" }, {"$set" : {"Last_Id":Last_Id}})
-	return True
-
-
-def delete_ride(collection_name, data):
-	collection = dbState(collection_name)
-	collection.delete_one(data)
-	return True
-
-
-def update_ride(username, id):
-	collection = dbState('Rides')
-	message = collection.find_one({"_id":id})
-	if username not in message['users']:
-		if datetime.strptime(datetime.now().strftime("%d-%m-%Y:%S-%M-%H"),"%d-%m-%Y:%S-%M-%H") < datetime.strptime(message["timestamp"],"%d-%m-%Y:%S-%M-%H"):
-			message['users'].append(username)
-		else:
-			return False
-	else:
-		return False
-	collection.update_one({"_id":id}, {"$set" : {"users":message["users"]}})
-	return True
-
-
-def delete_all_ride():
-	collection = dbState('Rides')
-	collection.remove({})
-	return True
-
-
-def delete_request_count_ride():
-	collection = dbState("RideCount")
-	collection.update_one({'_id': "request"}, {'$set': {'count': 0}})
-	return True
-
-
-def add_request_count_ride():
-	collection = dbState("RideCount")
-	collection.update_one({'_id': "request"}, {'$inc': {'count': 1}})
-	return True
-
-
-def add_ride_count():
-	collection = dbState("RideCount")
-	collection.update_one({'_id': "ride"}, {'$inc': {'count': 1}})
-	return True
 
 
 #api 8
@@ -139,31 +77,50 @@ def db_read():
 		if request.args.get('COMMAND') == "Upcoming":
 			source = request.args.get('source')
 			destination = request.args.get('destination')
-			message = get_upcoming_rides(source, destination)
+			message = rpc_client.read_call("get_upcoming_rides:" + str(source) + "," + str(destination))
+			message = json.loads(message.decode())["message"]
 			if message == []:
 				return make_response('',204)
 			return json.dumps({'upcoming':message}),200
 
 		if request.args.get('COMMAND') == "EXISTS":
 			collection_name = request.args.get("COLLECTION")
-			field = str(request.args.get("FIELD"))
 			val = request.args.get('VALUE')
-			message = entry_exists(collection_name, field, val)
+			field = str(request.args.get("FIELD"))
+			message = rpc_client.read_call("entry_exists:" + str(collection_name) + "," + str(field) + "," + str(val)).decode()
 			return message, 200
 
 		if request.args.get('COMMAND') == "Ride_Details":
 			id = request.args.get('id')
-			message = get_ride_details(id)
+			message = rpc_client.read_call("get_ride_details:" + str(id)).decode()
 			return message, 200
 		
 		if request.args.get('COMMAND') == "READ_REQUEST_COUNT":
-			message = read_requet_count_ride()
+			message = rpc_client.read_call("read_request_count_ride:").decode()
 			return message, 200
 
 		if request.args.get('COMMAND') == "READ_RIDE_COUNT":
-			message = read_ride_count()
+			message = rpc_client.read_call("read_ride_count:").decode()
 			return message, 200
-	# rides-end
+
+	elif request.args.get('ORIGIN') == "USER":
+		if request.args.get('COMMAND') == "EXISTS":
+			collection_name = request.args.get("DB")
+			val = request.args.get('VALUE')
+			field = str(request.args.get("FIELD"))
+			message = rpc_client.read_call("entry_exists:" + str(collection_name) + "," + str(field) + "," + str(val)).decode()
+			return message, 200
+
+		if request.args.get('COMMAND') == "READ_ALL":
+			message = rpc_client.read_call("read_all_users:").decode()
+			if (message == "0"):
+				return make_response('',204)
+			else:
+				return message, 200
+
+		if request.args.get('COMMAND') == "READ_REQUEST_COUNT":
+			message = rpc_client.read_call("read_request_count_user:").decode()
+			return message, 200
 
 
 # api 9
@@ -174,12 +131,13 @@ def db_write():
 	if (req['ORIGIN'] == 'RIDE'):
 		if (req['COMMAND'] == 'INSERT'):
 			collection_name = req['COLLECTION']
-			data = {}
 			fields = req['FIELDS']
+			data = {}
 			for field in range(len(fields)):
 				data[fields[field]] = req["VALUES"][field]
-			message = create_ride(collection_name, data)
-			if (message):
+			params = json.dumps({"func":"create_entry", "collection":collection_name, "data":data}).encode()
+			message = rpc_client.write_call(params).decode()
+			if(message == "1"):
 				return make_response("",201)
 
 		if(req['COMMAND'] == 'DELETE'):
@@ -187,54 +145,86 @@ def db_write():
 			data = {
 				req['FIELD']:req['VALUE']
 			}
-			message = delete_ride(collection_name, data)
-			if (message):
+			params = json.dumps({"func":"delete_entry", "collection":collection_name, "data":data}).encode()
+			message = rpc_client.write_call(params).decode()
+			if(message == "1"):
 				return make_response("",201)
 
 		if(req['COMMAND'] == 'Update_Ride'):
 			username = req['username']
-			id = req['id']
-			message = update_ride(username, id)
-			collection = dbState('Rides')
-			message = collection.find_one({"_id":id})
-			if(message):
-				return make_response('',200)
+			id = int(req['id'])
+			params = json.dumps({"func":"update_ride", "username":username, "id":id}).encode()
+			message = rpc_client.write_call(params).decode()
+			if(message == "1"):
+				return make_response("",200)
 			else:
-				return make_response('',400)
-				
+				return make_response("",400)
 
 		if (req['COMMAND'] == "DELETE_ALL"):
-			message = delete_all_ride()
-			if (message):
-				return make_response('',200)
+			params = json.dumps({"func":"delete_all", "collection":"Rides"}).encode()
+			message = rpc_client.write_call(params).decode()
+			if(message == "1"):
+				return make_response("",200)
 
-		if (req['COMMAND'] == "DELETE_REQUEST_COUNT"):
-			message = delete_request_count_ride()
-			if (message):
-				return make_response('', 200)
+		if (req['COMMAND'] == "RESET_REQUEST_COUNT"):
+			params = json.dumps({"func":"reset_request_count_ride"}).encode()
+			message = rpc_client.write_call(params).decode()
+			if(message == "1"):
+				return make_response("",200)
 
 		if (req['COMMAND'] == "ADD_REQUEST_COUNT"):
-			message = add_request_count_ride()
-			if (message):
-				return make_response('', 200)
+			params = json.dumps({"func":"add_request_count_ride"}).encode()
+			message = rpc_client.write_call(params).decode()
+			if(message == "1"):
+				return make_response("",200)
 
 		if (req['COMMAND'] == "ADD_RIDE_COUNT"):
-			message = add_ride_count()
-			if (message):
-				return make_response('', 200)
-	# rides-end
+			params = json.dumps({"func":"add_ride_count"}).encode()
+			message = rpc_client.write_call(params).decode()
+			if(message == "1"):
+				return make_response("",200)
+
+
+	if (req["ORIGIN"] == "USER"):
+		if (req['COMMAND'] == 'INSERT'):
+			collection = req['DB']
+			fields = req['FIELDS']
+			data = {}
+			for field in range(len(fields)):
+				data[fields[field]] = req["VALUES"][field]
+			params = json.dumps({"func":"create_entry", "collection":collection, "data":data}).encode()
+			message = rpc_client.write_call(params).decode()
+			if(message == "1"):
+				return make_response("",201)
+
+		if(req['COMMAND'] == 'DELETE'):
+			collection = req['DB']
+			data = {
+				req['FIELD']:req['VALUE']
+			}
+			params = json.dumps({"func":"delete_entry", "collection":collection, "data":data}).encode()
+			message = rpc_client.write_call(params).decode()
+			if(message == "1"):
+				return make_response("",200)
+
+		if (req['COMMAND'] == "DELETE_ALL"):
+			params = json.dumps({"func":"delete_all", "collection":"Users"}).encode()
+			message = rpc_client.write_call(params).decode()
+			if(message == "1"):
+				return make_response("",200)
+
+		if (req['COMMAND'] == "RESET_REQUEST_COUNT"):
+			params = json.dumps({"func":"reset_request_count_user"}).encode()
+			message = rpc_client.write_call(params).decode()
+			if(message == "1"):
+				return make_response("",200)
+
+		if (req['COMMAND'] == "ADD_REQUEST_COUNT"):
+			params = json.dumps({"func":"add_request_count_user"}).encode()
+			message = rpc_client.write_call(params).decode()
+			if(message == "1"):
+				return make_response("",200)
 
 
 if __name__ == '__main__':
-	client = pymongo.MongoClient('mongodb://rides_mongodb:27017/')
-	dbnames = client.list_database_names()
-	if "RideShare" in dbnames:
-		db = client["RideShare"]
-		db["Rides"].drop()
-		db["RideCount"].drop()
-		db["Area"].drop()
-	Add_area()
-	collection = dbState("RideCount")
-	collection.insert_one({"_id" : "ride", "count" : 0})
-	collection.insert_one({"_id" : "request", "count" : 0})
 	app.run(host='0.0.0.0', debug = False)

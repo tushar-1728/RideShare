@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import pika
 import sys
 
@@ -10,7 +9,7 @@ connection = pika.BlockingConnection(
 
 channel = connection.channel()
 
-channel.queue_declare(queue='hello')
+channel.queue_declare(queue='hello', auto_delete=True)
 
 channel.basic_publish(
     exchange='',
