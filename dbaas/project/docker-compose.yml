@@ -11,7 +11,6 @@ services:
       - orch-network
     environment:
       - TEAM_NAME=CC_0113_0221_0913_1125
-    # command: sh -c "rabbitmq-plugins enable rabbitmq_management && rabbitmq-server"
 
   orchestrator:
     build: .
@@ -27,55 +26,59 @@ services:
     volumes:
         - .:/code
     depends_on:
-        - worker1
-        - worker2
+        - master
+        - slave
         - rmq
     links:
       - rmq
     restart: on-failure
   
-  ride_share-mongodb:
+  master-mongodb:
     image: mongo:4.2
-    container_name: db_container
+    container_name: master_db_container
     networks:
       - orch-network
     environment:
       - TEAM_NAME=CC_0113_0221_0913_1125
 
-  worker1:
-    build: .
-    image: worker:latest
-    container_name: worker1_container
+  slave-mongodb:
+    image: mongo:4.2
+    container_name: slave_db_container
     networks:
       - orch-network
     environment:
       - TEAM_NAME=CC_0113_0221_0913_1125
-    command: sh -c "sleep 20 && python worker.py"
+
+  master:
+    build: .
+    image: worker:latest
+    container_name: master_container
+    networks:
+      - orch-network
+    environment:
+      - TEAM_NAME=CC_0113_0221_0913_1125
+    command: sh -c "sleep 20 && python worker.py 1"
     volumes:
         - .:/code
     depends_on:
         - rmq
-        - ride_share-mongodb
-    links:
-      - rmq
+        - master-mongodb
     restart: on-failure
 
-  worker2:
+  slave:
     build: .
     image: worker:latest
-    container_name: worker2_container
+    container_name: slave_container
     networks:
       - orch-network
     environment:
       - TEAM_NAME=CC_0113_0221_0913_1125
-    command: sh -c "sleep 20 && python worker.py"
+    command: sh -c "sleep 20 && python worker.py 0"
     volumes:
         - .:/code
     depends_on:
         - rmq
-        - ride_share-mongodb
-    links:
-      - rmq
+        - slave-mongodb
     restart: on-failure
 
   rides_web:
