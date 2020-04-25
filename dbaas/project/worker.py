@@ -185,6 +185,7 @@ def db_init():
 
 
 def on_read_request(ch, method, props, body):
+	print("Read request received.")
 	body = body.decode()
 	func_name, args = body.split(":")
 
@@ -213,6 +214,7 @@ def on_read_request(ch, method, props, body):
 
 
 def on_write_request(ch, method, props, body):
+	print("Write request received.")
 	body = json.loads(body.decode())
 	func_name = body["func"]
 
@@ -251,6 +253,8 @@ channel_write.basic_qos(prefetch_count=1)
 channel_write.basic_consume(queue="writeQ", on_message_callback=on_write_request)
 
 db_init()
+
+print("Ready for receiving requests.")
 
 channel_read.start_consuming()
 channel_write.start_consuming()

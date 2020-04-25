@@ -21,12 +21,12 @@ class RpcClient(object):
 
 		self.channel.basic_consume(
 			queue=self.callback_queue,
-			on_message_callback=self.on_response,
-			auto_ack=True)
+			on_message_callback=self.on_response
+		)
 
 	def on_response(self, ch, method, props, body):
 		if self.corr_id == props.correlation_id:
-			# ch.basic_ack(delivery_tag=method.delivery_tag)
+			ch.basic_ack(delivery_tag=method.delivery_tag)
 			self.response = body
 
 	def read_call(self, params):
