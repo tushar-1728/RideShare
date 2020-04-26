@@ -9,10 +9,15 @@ import time
 import pika
 import uuid
 
+connection = pika.BlockingConnection(
+	pika.ConnectionParameters(host='rmq')
+)
+
 class RpcClient(object):
 	def __init__(self):
 		self.connection = pika.BlockingConnection(
-			pika.ConnectionParameters(host='rmq'))
+			pika.ConnectionParameters(host='rmq')
+		)
 
 		self.channel = self.connection.channel()
 
@@ -45,25 +50,18 @@ class RpcClient(object):
 			self.connection.process_data_events()
 		return self.response
 
-	def write_call(self, params):
-		self.response = None
-		self.corr_id = str(uuid.uuid4())
-		self.channel.basic_publish(
-			exchange='',
-			routing_key='writeQ',
-			properties=pika.BasicProperties(
-				reply_to=self.callback_queue,
-				correlation_id=self.corr_id,
-			),
-			body=params
-		)
-		while self.response is None:
-			self.connection.process_data_events()
-		return self.response
-
 
 rpc_client = RpcClient()
 
+write_channel = connection.channel()
+result = write_channel.queue_declare(queue='writeQ')
+
+def write_call(params):
+	write_channel.basic_publish(
+		exchange="",
+		routing_key="writeQ",
+		body=params
+	)
 
 
 app = Flask(__name__)
@@ -136,9 +134,8 @@ def db_write():
 			for field in range(len(fields)):
 				data[fields[field]] = req["VALUES"][field]
 			params = json.dumps({"func":"create_entry", "collection":collection_name, "data":data}).encode()
-			message = rpc_client.write_call(params).decode()
-			if(message == "1"):
-				return make_response("",201)
+			write_call(params)
+			return make_response("",201)
 
 		if(req['COMMAND'] == 'DELETE'):
 			collection_name = req['COLLECTION']
@@ -146,43 +143,35 @@ def db_write():
 				req['FIELD']:req['VALUE']
 			}
 			params = json.dumps({"func":"delete_entry", "collection":collection_name, "data":data}).encode()
-			message = rpc_client.write_call(params).decode()
-			if(message == "1"):
-				return make_response("",201)
+			write_call(params)
+			return make_response("",201)
 
 		if(req['COMMAND'] == 'Update_Ride'):
 			username = req['username']
 			id = int(req['id'])
 			params = json.dumps({"func":"update_ride", "username":username, "id":id}).encode()
-			message = rpc_client.write_call(params).decode()
-			if(message == "1"):
-				return make_response("",200)
-			else:
-				return make_response("",400)
+			write_call(params)
+			return make_response("",200)
 
 		if (req['COMMAND'] == "DELETE_ALL"):
 			params = json.dumps({"func":"delete_all", "collection":"Rides"}).encode()
-			message = rpc_client.write_call(params).decode()
-			if(message == "1"):
-				return make_response("",200)
+			write_call(params)
+			return make_response("",200)
 
 		if (req['COMMAND'] == "RESET_REQUEST_COUNT"):
 			params = json.dumps({"func":"reset_request_count_ride"}).encode()
-			message = rpc_client.write_call(params).decode()
-			if(message == "1"):
-				return make_response("",200)
+			write_call(params)
+			return make_response("",200)
 
 		if (req['COMMAND'] == "ADD_REQUEST_COUNT"):
 			params = json.dumps({"func":"add_request_count_ride"}).encode()
-			message = rpc_client.write_call(params).decode()
-			if(message == "1"):
-				return make_response("",200)
+			write_call(params)
+			return make_response("",200)
 
 		if (req['COMMAND'] == "ADD_RIDE_COUNT"):
 			params = json.dumps({"func":"add_ride_count"}).encode()
-			message = rpc_client.write_call(params).decode()
-			if(message == "1"):
-				return make_response("",200)
+			write_call(params)
+			return make_response("",200)
 
 
 	if (req["ORIGIN"] == "USER"):
@@ -193,9 +182,8 @@ def db_write():
 			for field in range(len(fields)):
 				data[fields[field]] = req["VALUES"][field]
 			params = json.dumps({"func":"create_entry", "collection":collection, "data":data}).encode()
-			message = rpc_client.write_call(params).decode()
-			if(message == "1"):
-				return make_response("",201)
+			write_call(params)
+			return make_response("",201)
 
 		if(req['COMMAND'] == 'DELETE'):
 			collection = req['DB']
@@ -203,27 +191,23 @@ def db_write():
 				req['FIELD']:req['VALUE']
 			}
 			params = json.dumps({"func":"delete_entry", "collection":collection, "data":data}).encode()
-			message = rpc_client.write_call(params).decode()
-			if(message == "1"):
-				return make_response("",200)
+			write_call(params)
+			return make_response("",200)
 
 		if (req['COMMAND'] == "DELETE_ALL"):
 			params = json.dumps({"func":"delete_all", "collection":"Users"}).encode()
-			message = rpc_client.write_call(params).decode()
-			if(message == "1"):
-				return make_response("",200)
+			write_call(params)
+			return make_response("",200)
 
 		if (req['COMMAND'] == "RESET_REQUEST_COUNT"):
 			params = json.dumps({"func":"reset_request_count_user"}).encode()
-			message = rpc_client.write_call(params).decode()
-			if(message == "1"):
-				return make_response("",200)
+			write_call(params)
+			return make_response("",200)
 
 		if (req['COMMAND'] == "ADD_REQUEST_COUNT"):
 			params = json.dumps({"func":"add_request_count_user"}).encode()
-			message = rpc_client.write_call(params).decode()
-			if(message == "1"):
-				return make_response("",200)
+			write_call(params)
+			return make_response("",200)
 
 
 if __name__ == '__main__':

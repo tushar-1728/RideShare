@@ -109,10 +109,14 @@ def Join_ride(rideid):
 		print(user_list)
 		return make_response('',400)
 
-	msg = requests.post("http://orchestrator:5000/api/v1/db/write", data=json.dumps({"ORIGIN":"RIDE", "COMMAND":"Update_Ride", "id":int(rideid), "username":username}))
-	if msg.status_code == 400:
-		print(4)
-		return make_response('',400)
+	message = requests.get('http://orchestrator:5000/api/v1/db/read',params={"ORIGIN":"RIDE", 'COMMAND':'Ride_Details','id':int(rideid)}).json()
+	message = dict(message)
+	if(username in message["users"]):
+		return make_response("", 400)
+	if datetime.strptime(datetime.now().strftime("%d-%m-%Y:%S-%M-%H"),"%d-%m-%Y:%S-%M-%H") > datetime.strptime(message["timestamp"],"%d-%m-%Y:%S-%M-%H"):
+		return make_response("", 400)
+
+	requests.post("http://orchestrator:5000/api/v1/db/write", data=json.dumps({"ORIGIN":"RIDE", "COMMAND":"Update_Ride", "id":int(rideid), "username":username}))
 
 	return make_response('',200)
 

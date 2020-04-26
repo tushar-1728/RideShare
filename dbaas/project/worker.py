@@ -4,6 +4,7 @@ import csv
 import sys
 import pymongo
 import pika
+import threading
 
 
 
@@ -74,8 +75,8 @@ def read_ride_count():
 	return json.dumps({"count":count}).encode()
 
 
-def create_entry(body):
-	collection = dbState("master-mongodb", body["collection"])
+def create_entry(body, client_name):
+	collection = dbState(client_name, body["collection"])
 	data = body["data"]
 	if collection.count_documents({"_id":"Last_Id"}) == 0:
 		collection.insert_one({"_id":"Last_Id","Last_Id":0})
@@ -83,45 +84,33 @@ def create_entry(body):
 	data["_id"] = Last_Id
 	collection.insert_one(data)
 	collection.update_one({"_id":"Last_Id" }, {"$set" : {"Last_Id":Last_Id}})
-	return "1".encode()
 
 
-def delete_entry(body):
-	collection = dbState("master-mongodb", body["collection"])
+def delete_entry(body, client_name):
+	collection = dbState(client_name, body["collection"])
 	collection.delete_one(body["data"])
-	return "1".encode()
 
 
-def update_ride(body):
-	collection = dbState("master-mongodb", 'Rides')
+def update_ride(body, client_name):
+	collection = dbState(client_name, 'Rides')
 	message = collection.find_one({"_id":body["id"]})
-	if body["username"] not in message['users']:
-		if datetime.strptime(datetime.now().strftime("%d-%m-%Y:%S-%M-%H"),"%d-%m-%Y:%S-%M-%H") < datetime.strptime(message["timestamp"],"%d-%m-%Y:%S-%M-%H"):
-			message['users'].append(body["username"])
-		else:
-			return "0".encode()
-	else:
-		return "0".encode()
+	message['users'].append(body["username"])
 	collection.update_one({"_id":body["id"]}, {"$set" : {"users":message["users"]}})
-	return "1".encode()
 
 
-def reset_request_count_ride():
-	collection = dbState("master-mongodb", "RideCount")
+def reset_request_count_ride(client_name):
+	collection = dbState(client_name, "RideCount")
 	collection.update_one({'_id': "request"}, {'$set': {'count': 0}})
-	return "1".encode()
 
 
-def add_request_count_ride():
-	collection = dbState("master-mongodb", "RideCount")
+def add_request_count_ride(client_name):
+	collection = dbState(client_name, "RideCount")
 	collection.update_one({'_id': "request"}, {'$inc': {'count': 1}})
-	return "1".encode()
 
 
-def add_ride_count():
-	collection = dbState("master-mongodb", "RideCount")
+def add_ride_count(client_name):
+	collection = dbState(client_name, "RideCount")
 	collection.update_one({'_id': "ride"}, {'$inc': {'count': 1}})
-	return "1".encode()
 
 
 def read_all_users():
@@ -144,22 +133,19 @@ def read_request_count_user():
 	return json.dumps({"count":count}).encode()
 
 
-def delete_all(body):
-	collection = dbState("master-mongodb", body["collection"])
+def delete_all(body, client_name):
+	collection = dbState(client_name, body["collection"])
 	collection.remove({})
-	return "1".encode()
 
 
-def reset_request_count_user():
-	collection = dbState("master-mongodb", "UserCount")
+def reset_request_count_user(client_name):
+	collection = dbState(client_name, "UserCount")
 	collection.update_one({'_id': 0}, {'$set': {'count': 0}})
-	return "1".encode()
 
 
-def add_request_count_user():
-	collection = dbState("master-mongodb", "UserCount")
+def add_request_count_user(client_name):
+	collection = dbState(client_name, "UserCount")
 	collection.update_one({'_id': 0}, {'$inc': {'count': 1}})
-	return "1".encode()
 
 
 def db_init(client_name):
@@ -210,36 +196,62 @@ def on_read_request(ch, method, props, body):
 
 
 def on_write_request(ch, method, props, body):
-	body = json.loads(body.decode())
-	func_name = body["func"]
+	decoded_body = json.loads(body.decode())
+	func_name = decoded_body["func"]
+	client_name = "master-mongodb"
 	print("Write request received for " + func_name)
 
 	if(func_name == "create_entry"):
-		response = create_entry(body)
+		create_entry(decoded_body, client_name)
 	if(func_name == "delete_entry"):
-		response = delete_entry(body)
+		delete_entry(decoded_body, client_name)
 	if(func_name == "update_ride"):
-		response = update_ride(body)
+		update_ride(decoded_body, client_name)
 	if(func_name == "delete_all"):
-		response = delete_all(body)
+		delete_all(decoded_body, client_name)
 	if(func_name == "reset_request_count_ride"):
-		response = reset_request_count_ride()
+		reset_request_count_ride(client_name)
 	if(func_name == "add_request_count_ride"):
-		response = add_request_count_ride()
+		add_request_count_ride(client_name)
 	if(func_name == "add_ride_count"):
-		response = add_ride_count()
+		add_ride_count(client_name)
 	if(func_name == "reset_request_count_user"):
-		response = reset_request_count_user()
+		reset_request_count_user(client_name)
 	if(func_name == "add_request_count_user"):
-		response = add_request_count_user()
+		add_request_count_user(client_name)
 
 	ch.basic_publish(
-		exchange='',
-		routing_key=props.reply_to,
-		properties=pika.BasicProperties(correlation_id = props.correlation_id),
-		body=response
+		exchange='syncQ',
+		routing_key='',
+		body=body
 	)
 	ch.basic_ack(delivery_tag=method.delivery_tag)
+
+
+def on_sync_request(ch, method, props, body):
+	decoded_body = json.loads(body.decode())
+	func_name = decoded_body["func"]
+	client_name = "slave-mongodb"
+	print("Sync request received for " + func_name)
+
+	if(func_name == "create_entry"):
+		create_entry(decoded_body, client_name)
+	if(func_name == "delete_entry"):
+		delete_entry(decoded_body, client_name)
+	if(func_name == "update_ride"):
+		update_ride(decoded_body, client_name)
+	if(func_name == "delete_all"):
+		delete_all(decoded_body, client_name)
+	if(func_name == "reset_request_count_ride"):
+		reset_request_count_ride(client_name)
+	if(func_name == "add_request_count_ride"):
+		add_request_count_ride(client_name)
+	if(func_name == "add_ride_count"):
+		add_ride_count(client_name)
+	if(func_name == "reset_request_count_user"):
+		reset_request_count_user(client_name)
+	if(func_name == "add_request_count_user"):
+		add_request_count_user(client_name)
 
 
 if __name__ == '__main__':
@@ -251,6 +263,7 @@ if __name__ == '__main__':
 		client_name = "master-mongodb"
 		db_init(client_name)
 		channel_write = connection.channel()
+		channel_write.exchange_declare(exchange='syncQ', exchange_type='fanout')
 		channel_write.queue_declare(queue="writeQ")
 		channel_write.basic_qos(prefetch_count=1)
 		channel_write.basic_consume(queue="writeQ", on_message_callback=on_write_request)
@@ -259,8 +272,16 @@ if __name__ == '__main__':
 		print("slave mode")
 		client_name = "slave-mongodb"
 		db_init(client_name)
-		channel_read = connection.channel()
-		channel_read.queue_declare(queue='readQ')
-		channel_read.basic_qos(prefetch_count=1)
-		channel_read.basic_consume(queue='readQ', on_message_callback=on_read_request)
-		channel_read.start_consuming()
+
+		channel = connection.channel()
+		channel.queue_declare(queue='readQ')
+		channel.basic_qos(prefetch_count=1)
+		channel.basic_consume(queue='readQ', on_message_callback=on_read_request)
+
+		channel.exchange_declare(exchange="syncQ", exchange_type="fanout")
+		result = channel.queue_declare(queue='', exclusive=True)
+		queue_name = result.method.queue
+		channel.queue_bind(exchange='syncQ', queue=queue_name)
+		channel.basic_consume(queue=queue_name, on_message_callback=on_sync_request, auto_ack=True)
+
+		channel.start_consuming()
