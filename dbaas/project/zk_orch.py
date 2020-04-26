@@ -8,15 +8,15 @@ import sys
 import time
 import pika
 import uuid
+import docker
 
 connection = pika.BlockingConnection(
-	pika.ConnectionParameters(host='rmq')
+	pika.ConnectionParameters(host='rmq', heartbeat=0)
 )
-
 class RpcClient(object):
 	def __init__(self):
 		self.connection = pika.BlockingConnection(
-			pika.ConnectionParameters(host='rmq')
+			pika.ConnectionParameters(host='rmq', heartbeat=0)
 		)
 
 		self.channel = self.connection.channel()
@@ -211,4 +211,8 @@ def db_write():
 
 
 if __name__ == '__main__':
+	client = docker.from_env()
+	# contianer_list = client.containers.list()
+	# for i in contianer_list:
+	# 	print(i)
 	app.run(host='0.0.0.0', debug = False)

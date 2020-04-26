@@ -25,6 +25,8 @@ services:
     command: sh -c "sleep 20 && python zk_orch.py"
     volumes:
         - .:/code
+        - /usr/bin/docker:/usr/bin/docker
+        - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
         - master
         - slave
@@ -78,6 +80,7 @@ services:
         - .:/code
     depends_on:
         - rmq
+        - master
         - slave-mongodb
     restart: on-failure
 

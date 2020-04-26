@@ -5,6 +5,7 @@ import sys
 import pymongo
 import pika
 import threading
+from time import time
 
 
 
@@ -159,11 +160,16 @@ def db_init(client_name):
 		db["Users"].drop()
 		db["UserCount"].drop()
 	Add_area(client_name)
+
 	collection = dbState(client_name, "RideCount")
 	collection.insert_one({"_id" : "ride", "count" : 0})
 	collection.insert_one({"_id" : "request", "count" : 0})
+
 	collection = dbState(client_name, "UserCount")
 	collection.insert_one({"_id" : 0, "count" : 0})
+
+	collection = dbState(client_name, "syncQ")
+	collection.insert_one({"_id" : "last_id", "value":0})
 
 
 def on_read_request(ch, method, props, body):
@@ -201,61 +207,84 @@ def on_write_request(ch, method, props, body):
 	client_name = "master-mongodb"
 	print("Write request received for " + func_name)
 
-	if(func_name == "create_entry"):
-		create_entry(decoded_body, client_name)
-	if(func_name == "delete_entry"):
-		delete_entry(decoded_body, client_name)
-	if(func_name == "update_ride"):
-		update_ride(decoded_body, client_name)
-	if(func_name == "delete_all"):
-		delete_all(decoded_body, client_name)
-	if(func_name == "reset_request_count_ride"):
-		reset_request_count_ride(client_name)
-	if(func_name == "add_request_count_ride"):
-		add_request_count_ride(client_name)
-	if(func_name == "add_ride_count"):
-		add_ride_count(client_name)
-	if(func_name == "reset_request_count_user"):
-		reset_request_count_user(client_name)
-	if(func_name == "add_request_count_user"):
-		add_request_count_user(client_name)
+	if(func_name != "sync_command"):
+		collection = dbState("master-mongodb", "syncQ")
+		collection.update_one({"_id":"last_id" }, {"$inc" : {"value":1}})
+		last_id = collection.find_one({"_id":"last_id" })["value"]
+		collection.insert_one({"_id" : last_id, "data":decoded_body})
+		sync_data = json.dumps({"_id" : last_id, "data":decoded_body}).encode()
 
-	ch.basic_publish(
-		exchange='syncQ',
-		routing_key='',
-		body=body
-	)
-	ch.basic_ack(delivery_tag=method.delivery_tag)
+		if(func_name == "create_entry"):
+			create_entry(decoded_body, client_name)
+		if(func_name == "delete_entry"):
+			delete_entry(decoded_body, client_name)
+		if(func_name == "update_ride"):
+			update_ride(decoded_body, client_name)
+		if(func_name == "delete_all"):
+			delete_all(decoded_body, client_name)
+		if(func_name == "reset_request_count_ride"):
+			reset_request_count_ride(client_name)
+		if(func_name == "add_request_count_ride"):
+			add_request_count_ride(client_name)
+		if(func_name == "add_ride_count"):
+			add_ride_count(client_name)
+		if(func_name == "reset_request_count_user"):
+			reset_request_count_user(client_name)
+		if(func_name == "add_request_count_user"):
+			add_request_count_user(client_name)
+
+		ch.basic_publish(
+			exchange='syncQ',
+			routing_key='',
+			body=sync_data
+		)
+	elif(func_name == "sync_command"):
+		collection = dbState("master-mongodb", "syncQ")
+		commands = collection.find({"_id":{"$gte" : 0}})
+		for i in commands:
+			ch.basic_publish(
+				exchange="syncQ",
+				routing_key="",
+				body=i
+			)
 
 
 def on_sync_request(ch, method, props, body):
 	decoded_body = json.loads(body.decode())
-	func_name = decoded_body["func"]
+	latest_id = decoded_body["_id"]
+	data = decoded_body["data"]
+	func_name = data["func"]
 	client_name = "slave-mongodb"
+
 	print("Sync request received for " + func_name)
 
-	if(func_name == "create_entry"):
-		create_entry(decoded_body, client_name)
-	if(func_name == "delete_entry"):
-		delete_entry(decoded_body, client_name)
-	if(func_name == "update_ride"):
-		update_ride(decoded_body, client_name)
-	if(func_name == "delete_all"):
-		delete_all(decoded_body, client_name)
-	if(func_name == "reset_request_count_ride"):
-		reset_request_count_ride(client_name)
-	if(func_name == "add_request_count_ride"):
-		add_request_count_ride(client_name)
-	if(func_name == "add_ride_count"):
-		add_ride_count(client_name)
-	if(func_name == "reset_request_count_user"):
-		reset_request_count_user(client_name)
-	if(func_name == "add_request_count_user"):
-		add_request_count_user(client_name)
+	collection = dbState(client_name, "syncQ")
+	if(collection.find_one({"_id" : "last_id"})["value"] < latest_id):
+		collection.update_one({"_id" : "last_id"}, {"$inc" : {"value":1}})
+		collection.insert_one(decoded_body)
+
+		if(func_name == "create_entry"):
+			create_entry(data, client_name)
+		if(func_name == "delete_entry"):
+			delete_entry(data, client_name)
+		if(func_name == "update_ride"):
+			update_ride(data, client_name)
+		if(func_name == "delete_all"):
+			delete_all(data, client_name)
+		if(func_name == "reset_request_count_ride"):
+			reset_request_count_ride(client_name)
+		if(func_name == "add_request_count_ride"):
+			add_request_count_ride(client_name)
+		if(func_name == "add_ride_count"):
+			add_ride_count(client_name)
+		if(func_name == "reset_request_count_user"):
+			reset_request_count_user(client_name)
+		if(func_name == "add_request_count_user"):
+			add_request_count_user(client_name)
 
 
 if __name__ == '__main__':
-	connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq'))
+	connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
 	designation = int(sys.argv[1])
 	print("Ready for receiving requests.")
 	if(designation == 1):
@@ -266,7 +295,7 @@ if __name__ == '__main__':
 		channel_write.exchange_declare(exchange='syncQ', exchange_type='fanout')
 		channel_write.queue_declare(queue="writeQ")
 		channel_write.basic_qos(prefetch_count=1)
-		channel_write.basic_consume(queue="writeQ", on_message_callback=on_write_request)
+		channel_write.basic_consume(queue="writeQ", on_message_callback=on_write_request, auto_ack=True)
 		channel_write.start_consuming()
 	elif(designation == 0):
 		print("slave mode")
@@ -284,4 +313,13 @@ if __name__ == '__main__':
 		channel.queue_bind(exchange='syncQ', queue=queue_name)
 		channel.basic_consume(queue=queue_name, on_message_callback=on_sync_request, auto_ack=True)
 
-		channel.start_consuming()
+
+		t1 = threading.Thread(target=channel.start_consuming)
+		t1.start()
+		print("sync command sent ")
+		params = json.dumps({"func":"sync_command"}).encode()
+		channel.basic_publish(
+			exchange="",
+			routing_key="writeQ",
+			body=params
+		)
