@@ -13,7 +13,9 @@ services:
       - TEAM_NAME=CC_0113_0221_0913_1125
 
   orchestrator:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile_orch
     image: orch:latest
     container_name: orch_container
     networks:
@@ -28,61 +30,61 @@ services:
         - /usr/bin/docker:/usr/bin/docker
         - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
-        - master
-        - slave
+        # - master
+        # - slave
         - rmq
     links:
       - rmq
-    restart: on-failure
+    # restart: on-failure
   
-  master-mongodb:
-    image: mongo:4.2
-    container_name: master_db_container
-    networks:
-      - orch-network
-    environment:
-      - TEAM_NAME=CC_0113_0221_0913_1125
+  # master-mongodb:
+  #   image: mongo:4.2
+  #   container_name: master_db_container
+  #   networks:
+  #     - orch-network
+  #   environment:
+  #     - TEAM_NAME=CC_0113_0221_0913_1125
 
-  slave-mongodb:
-    image: mongo:4.2
-    container_name: slave_db_container
-    networks:
-      - orch-network
-    environment:
-      - TEAM_NAME=CC_0113_0221_0913_1125
+  # slave-mongodb:
+  #   image: mongo:4.2
+  #   container_name: slave_db_container
+  #   networks:
+  #     - orch-network
+  #   environment:
+  #     - TEAM_NAME=CC_0113_0221_0913_1125
 
-  master:
-    build: .
-    image: worker:latest
-    container_name: master_container
-    networks:
-      - orch-network
-    environment:
-      - TEAM_NAME=CC_0113_0221_0913_1125
-    command: sh -c "sleep 20 && python worker.py 1"
-    volumes:
-        - .:/code
-    depends_on:
-        - rmq
-        - master-mongodb
-    restart: on-failure
+  # master:
+  #   build: .
+  #   image: worker:latest
+  #   container_name: master_container
+  #   networks:
+  #     - orch-network
+  #   environment:
+  #     - TEAM_NAME=CC_0113_0221_0913_1125
+  #   command: sh -c "sleep 20 && python worker.py 1"
+  #   volumes:
+  #       - .:/code
+  #   depends_on:
+  #       - rmq
+  #       - master-mongodb
+  #   restart: on-failure
 
-  slave:
-    build: .
-    image: worker:latest
-    container_name: slave_container
-    networks:
-      - orch-network
-    environment:
-      - TEAM_NAME=CC_0113_0221_0913_1125
-    command: sh -c "sleep 20 && python worker.py 0"
-    volumes:
-        - .:/code
-    depends_on:
-        - rmq
-        - master
-        - slave-mongodb
-    restart: on-failure
+  # slave:
+  #   build: .
+  #   image: worker:latest
+  #   container_name: slave_container
+  #   networks:
+  #     - orch-network
+  #   environment:
+  #     - TEAM_NAME=CC_0113_0221_0913_1125
+  #   command: sh -c "sleep 20 && python worker.py 0"
+  #   volumes:
+  #       - .:/code
+  #   depends_on:
+  #       - rmq
+  #       - master
+  #       - slave-mongodb
+  #   restart: on-failure
 
   rides_web:
     build: ../../user-ride/ride/.
@@ -112,3 +114,4 @@ services:
 
 networks:
   orch-network:
+    name: orch-network

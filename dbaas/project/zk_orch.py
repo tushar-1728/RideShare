@@ -9,6 +9,7 @@ import time
 import pika
 import uuid
 import docker
+import threading
 
 connection = pika.BlockingConnection(
 	pika.ConnectionParameters(host='rmq', heartbeat=0)
@@ -211,8 +212,29 @@ def db_write():
 
 
 if __name__ == '__main__':
-	client = docker.from_env()
-	# contianer_list = client.containers.list()
-	# for i in contianer_list:
-	# 	print(i)
+	client = docker.DockerClient(base_url='unix://var/run/docker.sock')
+
+	master_list = []
+	slave_list = []
+	master_count = 1
+	slave_count = 1
+
+	container = client.containers.run(
+		"workers:latest",
+		detach = True,
+		name = "master_container"+str(master_count),
+		network = "orch-network",
+		command=["sh", "-c", "service mongodb start; python3 worker.py 1"]
+	)
+	master_list.append(container)
+
+	container = client.containers.run(
+		"workers:latest",
+		detach = True,
+		name = "slave_container"+str(slave_count),
+		network = "orch-network",
+		command=["sh", "-c", "service mongodb start; python3 worker.py 0"]
+	)
+	slave_list.append(container)
+	
 	app.run(host='0.0.0.0', debug = False)
