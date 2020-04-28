@@ -21,7 +21,7 @@ services:
     networks:
       - orch-network
     ports:
-      - "8000:5000"
+      - "80:5000"
     environment:
       - TEAM_NAME=CC_0113_0221_0913_1125
     command: sh -c "sleep 20 && python zk_orch.py"
@@ -30,64 +30,13 @@ services:
         - /usr/bin/docker:/usr/bin/docker
         - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
-        # - master
-        # - slave
         - rmq
     links:
       - rmq
     # restart: on-failure
-  
-  # master-mongodb:
-  #   image: mongo:4.2
-  #   container_name: master_db_container
-  #   networks:
-  #     - orch-network
-  #   environment:
-  #     - TEAM_NAME=CC_0113_0221_0913_1125
-
-  # slave-mongodb:
-  #   image: mongo:4.2
-  #   container_name: slave_db_container
-  #   networks:
-  #     - orch-network
-  #   environment:
-  #     - TEAM_NAME=CC_0113_0221_0913_1125
-
-  # master:
-  #   build: .
-  #   image: worker:latest
-  #   container_name: master_container
-  #   networks:
-  #     - orch-network
-  #   environment:
-  #     - TEAM_NAME=CC_0113_0221_0913_1125
-  #   command: sh -c "sleep 20 && python worker.py 1"
-  #   volumes:
-  #       - .:/code
-  #   depends_on:
-  #       - rmq
-  #       - master-mongodb
-  #   restart: on-failure
-
-  # slave:
-  #   build: .
-  #   image: worker:latest
-  #   container_name: slave_container
-  #   networks:
-  #     - orch-network
-  #   environment:
-  #     - TEAM_NAME=CC_0113_0221_0913_1125
-  #   command: sh -c "sleep 20 && python worker.py 0"
-  #   volumes:
-  #       - .:/code
-  #   depends_on:
-  #       - rmq
-  #       - master
-  #       - slave-mongodb
-  #   restart: on-failure
 
   rides_web:
-    build: ../../user-ride/ride/.
+    # build: ../../user-ride/ride/.
     image: rides:latest
     container_name: rides_container
     command: python server.py
@@ -100,7 +49,7 @@ services:
       - "8080:5000"
 
   users_web:
-    build: ../../user-ride/user/.
+    # build: ../../user-ride/user/.
     image: users:latest
     container_name: users_container
     command: python server.py
@@ -110,7 +59,7 @@ services:
     environment:
       - TEAM_NAME=CC_0113_0221_0913_1125
     ports:
-      - "80:5000"
+      - "8000:5000"
 
 networks:
   orch-network:

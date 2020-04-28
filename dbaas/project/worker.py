@@ -243,6 +243,7 @@ def on_write_request(ch, method, props, body):
 		collection = dbState("syncQ")
 		commands = collection.find({"_id":{"$gte" : 0}})
 		for i in commands:
+			i = json.dumps(i).encode()
 			ch.basic_publish(
 				exchange="syncQ",
 				routing_key="",

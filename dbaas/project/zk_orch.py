@@ -1,19 +1,25 @@
 from flask import Flask, request, jsonify, make_response, redirect
-import pymongo
-import requests
-from datetime import datetime
 import json
-import csv
-import sys
-import time
 import pika
 import uuid
 import docker
 import threading
 
+app = Flask(__name__)
+
 connection = pika.BlockingConnection(
 	pika.ConnectionParameters(host='rmq', heartbeat=0)
 )
+write_channel = connection.channel()
+result = write_channel.queue_declare(queue='writeQ')
+
+timer_start_flag = 0
+request_count = 0
+master_count = 0
+slave_count = 0
+slave_list = []
+master_list = []
+
 class RpcClient(object):
 	def __init__(self):
 		self.connection = pika.BlockingConnection(
@@ -54,8 +60,6 @@ class RpcClient(object):
 
 rpc_client = RpcClient()
 
-write_channel = connection.channel()
-result = write_channel.queue_declare(queue='writeQ')
 
 def write_call(params):
 	write_channel.basic_publish(
@@ -64,13 +68,47 @@ def write_call(params):
 		body=params
 	)
 
+def timer_func():
+	global request_count
+	global slave_count
+	global slave_list
+	req_slave_count = request_count / 20
+	while(req_slave_count > slave_count):
+		slave_count += 1
+		container = client.containers.run(
+			"workers:latest",
+			detach = True,
+			name = "slave_container"+str(slave_count),
+			network = "orch-network",
+			command=["sh", "-c", "service mongodb start; python3 worker.py 0"]
+		)
+		slave_list.append(container)
+	while(req_slave_count < slave_count and slave_count > 1):
+		slave_count -= 1
+		container = slave_list.pop()
+		container.stop(timeout = 0)
+		container.remove()
 
-app = Flask(__name__)
+	request_count = 0
+	timer = threading.Timer(0.5*60, timer_func)
+	timer.start()
+	
 
 
 #api 8
 @app.route('/api/v1/db/read', methods=['GET'])
 def db_read():
+	global request_count
+	global timer_start_flag
+
+	request_count += 1
+
+	if(timer_start_flag == 0):
+		timer_start_flag = 1
+		timer = threading.Timer(0.5*60, timer_func)
+		print("timer func started")
+		timer.start()
+
 	# rides-start
 	if request.args.get('ORIGIN') == "RIDE":
 		if request.args.get('COMMAND') == "Upcoming":
@@ -211,13 +249,26 @@ def db_write():
 			return make_response("",200)
 
 
+# api list workers
+@app.route('/api/v1/worker/list', methods=['GET'])
+def get_worker_list():
+	pid_list = []
+	for i in master_list:
+		pid_list.append(p_client.inspect_container(i.name)['State']['Pid'])
+	
+	for i in slave_list:
+		pid_list.append(p_client.inspect_container(i.name)['State']['Pid'])
+
+	pid_list.sort()
+	return make_response(str(pid_list), 200)
+
+
 if __name__ == '__main__':
 	client = docker.DockerClient(base_url='unix://var/run/docker.sock')
+	p_client = docker.APIClient(base_url='unix://var/run/docker.sock')
 
-	master_list = []
-	slave_list = []
-	master_count = 1
-	slave_count = 1
+	master_count += 1
+	slave_count += 1
 
 	container = client.containers.run(
 		"workers:latest",
@@ -226,6 +277,7 @@ if __name__ == '__main__':
 		network = "orch-network",
 		command=["sh", "-c", "service mongodb start; python3 worker.py 1"]
 	)
+
 	master_list.append(container)
 
 	container = client.containers.run(
@@ -236,5 +288,11 @@ if __name__ == '__main__':
 		command=["sh", "-c", "service mongodb start; python3 worker.py 0"]
 	)
 	slave_list.append(container)
+
+	for i in master_list:
+		print(i.name, p_client.inspect_container(i.name)['State']['Pid'])
+	
+	for i in slave_list:
+		print(i.name, p_client.inspect_container(i.name)['State']['Pid'])
 	
 	app.run(host='0.0.0.0', debug = False)
