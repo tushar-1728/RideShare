@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "../rabbitmq"
+		},
+		{
+			"path": "../../user-ride"
 		}
 	],
 	"settings": {}
