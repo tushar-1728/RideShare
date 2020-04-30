@@ -315,8 +315,6 @@ if __name__ == '__main__':
 		channel.basic_consume(queue=queue_name, on_message_callback=on_sync_request, auto_ack=True)
 
 
-		# t1 = threading.Thread(target=channel.start_consuming)
-		# t1.start()
 		print("sync command sent ")
 		params = json.dumps({"func":"sync_command"}).encode()
 		channel.basic_publish(

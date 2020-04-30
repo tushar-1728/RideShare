@@ -7,14 +7,7 @@ services:
     container_name: rides_container
     command: python server.py
     restart: always
-    networks:
-      - rides-network
     environment:
       - TEAM_NAME=CC_0113_0221_0913_1125
     ports:
-      - "8080:5000"
-
-networks:
-  rides-network:
-    external:
-      name: cc_network
+      - "80:5000"

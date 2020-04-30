@@ -7,14 +7,7 @@ services:
     container_name: users_container
     command: python server.py
     restart: always
-    networks:
-      - users_network
     environment:
       - TEAM_NAME=CC_0113_0221_0913_1125
     ports:
       - "80:5000"
-
-networks:
-  users_network:
-    external:
-      name: cc_network

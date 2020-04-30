@@ -90,7 +90,7 @@ def timer_func():
 		container.remove()
 
 	request_count = 0
-	timer = threading.Timer(0.5*60, timer_func)
+	timer = threading.Timer(2*60, timer_func)
 	timer.start()
 	
 
@@ -105,7 +105,7 @@ def db_read():
 
 	if(timer_start_flag == 0):
 		timer_start_flag = 1
-		timer = threading.Timer(0.5*60, timer_func)
+		timer = threading.Timer(2*60, timer_func)
 		print("timer func started")
 		timer.start()
 
