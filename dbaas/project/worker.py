@@ -259,31 +259,36 @@ def on_sync_request(ch, method, props, body):
 	data = decoded_body["data"]
 	func_name = data["func"]
 
-	print("Sync request received for " + func_name)
+	# print("Sync request received for " + func_name)
 
 	collection = dbState("syncQ")
 	if(collection.find_one({"_id" : "last_id"})["value"] < latest_id):
-		collection.update_one({"_id" : "last_id"}, {"$inc" : {"value":1}})
-		collection.insert_one(decoded_body)
+		try:
+			collection.insert_one(decoded_body)
+			collection.update_one({"_id" : "last_id"}, {"$inc" : {"value":1}})
+			if(func_name == "create_entry"):
+				create_entry(data)
+			if(func_name == "delete_entry"):
+				delete_entry(data)
+			if(func_name == "update_ride"):
+				update_ride(data)
+			if(func_name == "delete_all"):
+				delete_all(data)
+			if(func_name == "reset_request_count_ride"):
+				reset_request_count_ride()
+			if(func_name == "add_request_count_ride"):
+				add_request_count_ride()
+			if(func_name == "add_ride_count"):
+				add_ride_count()
+			if(func_name == "reset_request_count_user"):
+				reset_request_count_user()
+			if(func_name == "add_request_count_user"):
+				add_request_count_user()
+		except:
+			print(sys.stderr)
+			print("entry:")
+			print(decoded_body)
 
-		if(func_name == "create_entry"):
-			create_entry(data)
-		if(func_name == "delete_entry"):
-			delete_entry(data)
-		if(func_name == "update_ride"):
-			update_ride(data)
-		if(func_name == "delete_all"):
-			delete_all(data)
-		if(func_name == "reset_request_count_ride"):
-			reset_request_count_ride()
-		if(func_name == "add_request_count_ride"):
-			add_request_count_ride()
-		if(func_name == "add_ride_count"):
-			add_ride_count()
-		if(func_name == "reset_request_count_user"):
-			reset_request_count_user()
-		if(func_name == "add_request_count_user"):
-			add_request_count_user()
 
 
 if __name__ == '__main__':
