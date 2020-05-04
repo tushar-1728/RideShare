@@ -9,8 +9,10 @@ https://kazoo.readthedocs.io/en/latest/async_usage.html
 """
 import logging
 
+import json
 from kazoo.client import KazooClient
 from kazoo.client import KazooState
+from kazoo.protocol.states import EventType
 
 """
 Notice, the znodes we are creating are not linked to any process here.
@@ -26,12 +28,17 @@ logging.basicConfig()
 # Can also use the @DataWatch and @ChildrenWatch decorators for the same
 def demo_func(event):
     # Create a node with data
-    zk.create("/producer/node_2", b"new demo producer node") 
+    zk.create("/producer/node_2", b"new demo producer node")
+    print("apple")
+    # print(dir(event))
     print(event)
+    # print(event.state)
+    # print(event.path)
+    # print(event.type)
     children = zk.get_children("/producer")
     print("There are %s children with names %s" % (len(children), children))
 
-zk = KazooClient(hosts='zoo:2181')
+zk = KazooClient(hosts='127.0.0.1:2181')
 zk.start()
 # Deleting all existing nodes (This is just for the demo to be consistent)
 zk.delete("/producer", recursive=True)
@@ -45,13 +52,33 @@ if zk.exists("/producer/node_1"):
 else:
     zk.create("/producer/node_1", b"demo producer node")
 
+# @zk.DataWatch("/producer/node_1")
+# def watch(data, stat):
+#     if(data):
+#         data = data.decode()
+#         print(data)
+#         print(stat)
+#         print("data watch working")
+#     else:
+#         print("node deleted")
+
+@zk.ChildrenWatch("/producer")
+def child_watch(children):
+    print(children)
+    print("child watch working")
+
+zk.set("/producer/node_1", json.dumps({"app":"fruit"}).encode())
+
 # Print the version of a node and its data
 data, stat = zk.get("/producer/node_1")
 print("Version: %s, data: %s" % (stat.version, data.decode("utf-8")))
 
 # List the children
-children = zk.get_children("/producer", watch=demo_func)
+children = zk.get_children("/producer")#, watch=demo_func)
 print("There are %s children with names %s" % (len(children), children))
 
 zk.delete("/producer/node_1")
 print("Deleted /producer/node_1")
+
+zk.create("/producer/node_5", b"demo producer node")
+zk.delete("/producer/node_5")
