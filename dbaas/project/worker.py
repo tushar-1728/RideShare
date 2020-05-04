@@ -6,8 +6,15 @@ import pymongo
 import pika
 import threading
 from time import time
+from kazoo.client import KazooClient
+import logging
 
+logging.basicConfig()
+zk = KazooClient(hosts='zoo:2181')
+zk.start()
 
+path = ""
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
 
 
 def dbState(collection_name):
@@ -290,43 +297,93 @@ def on_sync_request(ch, method, props, body):
 			print(decoded_body)
 
 
+def create_master(connection):
+	print("master mode")
+		
+	data = zk.get("/worker/master")[0]
+	zk.set("/worker/master", b"")
+	pid = data.decode().split()[1]
+	path = "/worker/master/" + pid
+	zk.create(path, b"running")
+	
+	db_init()
+	channel_write = connection.channel()
+	channel_write.exchange_declare(exchange='syncQ', exchange_type='fanout')
+	channel_write.queue_declare(queue="writeQ")
+	channel_write.basic_qos(prefetch_count=1)
+	channel_write.basic_consume(queue="writeQ", on_message_callback=on_write_request)
+	channel_write.start_consuming()
+
+
+def create_slave(connection):
+	global path
+	print("slave mode")
+		
+	data = zk.get("/worker/slave")[0]
+	zk.set("/worker/slave", b"")
+	pid = data.decode().split()[1]
+	path = "/worker/slave/" + pid
+	zk.create(path, b"running")
+
+
+	db_init()
+	channel = connection.channel()
+	channel.queue_declare(queue='readQ')
+	channel.basic_qos(prefetch_count=1)
+	channel.basic_consume(queue='readQ', on_message_callback=on_read_request)
+
+	channel.exchange_declare(exchange="syncQ", exchange_type="fanout")
+	result = channel.queue_declare(queue='', exclusive=True)
+	queue_name = result.method.queue
+	channel.queue_bind(exchange='syncQ', queue=queue_name)
+	channel.basic_consume(queue=queue_name, on_message_callback=on_sync_request, auto_ack=True)
+
+	print("sync command sent ")
+	channel.basic_publish(
+		exchange="",
+		routing_key="writeQ",
+		body=json.dumps({"func":"sync_command"}).encode()
+	)
+	t1 = threading.Thread(target=channel.start_consuming)
+	t1.start()
+
+	@zk.DataWatch(path)
+	def slave_watch(data, stat):
+		print("entered data watch of slave")
+		print(data)
+		print(path)
+		if(data):
+			data = data.decode()
+			if(data == "modified"):
+				print("data verified")
+				zk.delete(path)
+				print("deleted slave znode")
+				pid = path.split("/")[3]
+				zk.create("/worker/master/" + pid, b"running")
+				print("created worker znode")
+				change_designation(connection, channel)
+
+
+def change_designation(connection, channel):
+	print("entered designation function")
+	channel.stop_consuming()
+	# channel.close()
+	print("channel closed")
+	# connection.close()
+	print("designation changed")
+	connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
+	channel_write = connection.channel()
+	channel_write.exchange_declare(exchange='syncQ', exchange_type='fanout')
+	channel_write.queue_declare(queue="writeQ")
+	channel_write.basic_qos(prefetch_count=1)
+	channel_write.basic_consume(queue="writeQ", on_message_callback=on_write_request)
+	channel_write.start_consuming()
+
 
 if __name__ == '__main__':
-	connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
 	designation = int(sys.argv[1])
 	print("Ready for receiving requests.")
 	if(designation == 1):
-		print("master mode")
-		db_init()
-		channel_write = connection.channel()
-		channel_write.exchange_declare(exchange='syncQ', exchange_type='fanout')
-		channel_write.queue_declare(queue="writeQ")
-		channel_write.basic_qos(prefetch_count=1)
-		channel_write.basic_consume(queue="writeQ", on_message_callback=on_write_request)
-		channel_write.start_consuming()
+		create_master(connection)
 	elif(designation == 0):
-		print("slave mode")
-		db_init()
-
-		channel = connection.channel()
-		channel.queue_declare(queue='readQ')
-		channel.basic_qos(prefetch_count=1)
-		channel.basic_consume(queue='readQ', on_message_callback=on_read_request)
-
-		channel.exchange_declare(exchange="syncQ", exchange_type="fanout")
-		result = channel.queue_declare(queue='', exclusive=True)
-		queue_name = result.method.queue
-		channel.queue_bind(exchange='syncQ', queue=queue_name)
-		channel.basic_consume(queue=queue_name, on_message_callback=on_sync_request, auto_ack=True)
-
-
-		# t1 = threading.Thread(target=channel.start_consuming)
-		# t1.start()
-		print("sync command sent ")
-		params = json.dumps({"func":"sync_command"}).encode()
-		channel.basic_publish(
-			exchange="",
-			routing_key="writeQ",
-			body=json.dumps({"func":"sync_command"}).encode()
-		)
-		channel.start_consuming()		
+		create_slave(connection)		
