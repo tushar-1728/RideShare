@@ -4,6 +4,8 @@ import pika
 import uuid
 import docker
 import threading
+from kazoo.client import KazooClient
+import logging
 
 app = Flask(__name__)
 
@@ -13,12 +15,44 @@ connection = pika.BlockingConnection(
 write_channel = connection.channel()
 result = write_channel.queue_declare(queue='writeQ')
 
+logging.basicConfig()
+zk = KazooClient(hosts='zoo:2181')
+zk.start()
+
 timer_start_flag = 0
 request_count = 0
 master_count = 0
 slave_count = 0
 slave_list = []
 master_list = []
+
+
+@zk.DataWatch("/worker/slave/")
+def slave_watch(data, stat):
+	if(data):
+		global slave_count
+		global slave_list
+		data = data.decode()
+		print("data:",data)
+		if(data == "deleted"):
+			container = client.containers.run(
+				"workers:latest",
+				detach = True,
+				name = "slave_container"+str(slave_count),
+				network = "orch-network",
+				command=["sh", "-c", "service mongodb start; python3 worker.py 0"]
+			)
+			pid = p_client.inspect_container(container.name)['State']['Pid']
+			slave_list.append(container)
+
+			zk.create("/worker/slave/" + str(pid), b"running", makepath=True)
+
+
+# @zk.DataWatch("/worker/master")
+# def master_watch(data, stat):
+# 	data = data.decode()
+# 	if(data == "stoped"):
+
 
 class RpcClient(object):
 	def __init__(self):
@@ -263,6 +297,23 @@ def get_worker_list():
 	return make_response(str(pid_list), 200)
 
 
+# api crash slave
+@app.route('/api/v1/crash/slave', methods=['POST'])
+def crash_slave():
+	pid_list = []
+	for i in slave_list:
+		pid_list.append(p_client.inspect_container(i.name)['State']['Pid'])
+	max_pid = max(pid_list)
+	max_pid_index = pid_list.index(max_pid)
+	container = slave_list.pop(max_pid_index)
+	container.stop(timeout = 0)
+	container.remove()
+	zk.delete("/worker/slave/" + str(max_pid))
+	zk.set("/worker/slave", b"deleted")
+	print("path deleted")
+	return make_response(str(max_pid), 200)
+
+
 if __name__ == '__main__':
 	client = docker.DockerClient(base_url='unix://var/run/docker.sock')
 	p_client = docker.APIClient(base_url='unix://var/run/docker.sock')
@@ -277,8 +328,10 @@ if __name__ == '__main__':
 		network = "orch-network",
 		command=["sh", "-c", "service mongodb start; python3 worker.py 1"]
 	)
-
+	pid = p_client.inspect_container(container.name)['State']['Pid']
 	master_list.append(container)
+
+	zk.create("/worker/master", b"running", makepath=True)
 
 	container = client.containers.run(
 		"workers:latest",
@@ -287,12 +340,9 @@ if __name__ == '__main__':
 		network = "orch-network",
 		command=["sh", "-c", "service mongodb start; python3 worker.py 0"]
 	)
+	pid = p_client.inspect_container(container.name)['State']['Pid']
 	slave_list.append(container)
 
-	for i in master_list:
-		print(i.name, p_client.inspect_container(i.name)['State']['Pid'])
-	
-	for i in slave_list:
-		print(i.name, p_client.inspect_container(i.name)['State']['Pid'])
-	
+	zk.create("/worker/slave/" + str(pid), b"running", makepath=True)
+
 	app.run(host='0.0.0.0', debug = False)

@@ -12,6 +12,19 @@ services:
     environment:
       - TEAM_NAME=CC_0113_0221_0913_1125
 
+  zoo:
+    image: zookeeper
+    restart: on-failure
+    hostname: zoo
+    ports:
+      - 2181:2181
+    networks:
+      - orch-network
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181
+      TEAM_NAME: CC_0113_0221_0913_1125
+
   orchestrator:
     build:
       context: .
@@ -31,8 +44,10 @@ services:
         - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
         - rmq
+        - zoo
     links:
       - rmq
+      - zoo
     # restart: on-failure
 
   rides_web:
