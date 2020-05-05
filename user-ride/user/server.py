@@ -30,17 +30,17 @@ def adduser():
 	username = req["username"]
 	password = req["password"]
 	if username == '' or username == None or password == None or password == '':
-		return make_response('',400)
+		return make_response('Username or password is invalid.',400)
 
 	if (not is_sha1(password)):
-		return make_response('',400)
+		return make_response('Password is invalid.',400)
 
 	if (requests.get("http://34.238.33.155:80/api/v1/db/read", params={"ORIGIN":"USER", "COMMAND":"EXISTS", "FIELD":"username", "VALUE":username, "DB":"Users"})).json()["count"] != 0:
-		return make_response('',400)
+		return make_response('User already exists.',400)
 
 	requests.post("http://34.238.33.155:80/api/v1/db/write", data=json.dumps({"ORIGIN":"USER", "COMMAND":"INSERT", "FIELDS":["username","password"], "VALUES":[username,password], "DB":"Users"}))
 
-	return make_response('',201)
+	return make_response('User created.',201)
 
 
 # api 2
@@ -48,14 +48,14 @@ def adduser():
 def deleteuser(username):
 	requests.post("http://34.238.33.155:80/api/v1/db/write", data=json.dumps({"ORIGIN":"USER", "COMMAND":"ADD_REQUEST_COUNT"}))
 	if username == '' or username == None:
-		return make_response('',400)
+		return make_response('Username is empty.',400)
 
 	if (requests.get("http://34.238.33.155:80/api/v1/db/read", params={"ORIGIN":"USER", "COMMAND":"EXISTS", "FIELD":"username", "VALUE":username, "DB":"Users"})).json()["count"] == 0:
-		return make_response('',400)
+		return make_response('User does not exist.',400)
 
 	requests.post("http://34.238.33.155:80/api/v1/db/write", data=json.dumps({"ORIGIN":"USER", "COMMAND":"DELETE", "FIELD":"username", "VALUE":username, "DB":"Users"}))
 
-	return make_response('',200)
+	return make_response('User deleted.',200)
 
 
 #api 10
