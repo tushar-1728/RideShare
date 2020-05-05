@@ -13,8 +13,6 @@ services:
     image: zookeeper
     restart: on-failure
     hostname: zoo
-    ports:
-      - 2181:2181
     networks:
       - orch-network
     environment:
@@ -45,7 +43,7 @@ services:
     links:
       - rmq
       - zoo
-    # restart: on-failure
+    restart: on-failure
 
 networks:
   orch-network:

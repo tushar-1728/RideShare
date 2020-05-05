@@ -367,9 +367,7 @@ def create_slave(connection):
 def change_designation(connection, channel):
 	print("entered designation function")
 	channel.stop_consuming()
-	# channel.close()
 	print("channel closed")
-	# connection.close()
 	print("designation changed")
 	connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
 	channel_write = connection.channel()
