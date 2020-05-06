@@ -44,8 +44,8 @@ def slave_watch(data, stat):
 				network = "orch-network",
 				command=["sh", "-c", "service mongodb start; python3 worker.py 0"]
 			)
-			pid = p_client.inspect_container(container.name)['State']['Pid']
 			slave_list.append(container)
+			pid = p_client.inspect_container(container.name)['State']['Pid']
 			message = ("running " + str(pid)).encode()
 			zk.set("/worker/slave", message)
 
@@ -147,11 +147,16 @@ def timer_func():
 			command=["sh", "-c", "service mongodb start; python3 worker.py 0"]
 		)
 		slave_list.append(container)
+		pid = p_client.inspect_container(container.name)['State']['Pid']
+		message = ("running " + str(pid)).encode()
+		zk.set("/worker/slave", message)
 	while(req_slave_count < slave_count and slave_count > 1):
 		slave_count -= 1
 		container = slave_list.pop()
+		pid = p_client.inspect_container(container.name)['State']['Pid']
 		container.stop(timeout = 0)
 		container.remove()
+		zk.delete("/worker/slave/" + str(pid))
 
 	request_count = 0
 	timer = threading.Timer(0.5*60, timer_func)
