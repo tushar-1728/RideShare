@@ -45,7 +45,9 @@ def get_upcoming_rides(args):
     collection = dbState('Rides')
     for rides in collection.find({"source": source, "destination": destination}, {"_id": 1, "created_by": 1, "timestamp": 1}):
         print("pass1")
-        if datetime.strptime(datetime.now().strftime("%d-%m-%Y:%S-%M-%H"), "%d-%m-%Y:%S-%M-%H") < datetime.strptime(rides["timestamp"], "%d-%m-%Y:%S-%M-%H"):
+        current_timestamp = datetime.strptime(datetime.now().strftime("%d-%m-%Y:%S-%M-%H"), "%d-%m-%Y:%S-%M-%H")
+        ride_timestamp = datetime.strptime(rides["timestamp"], "%d-%m-%Y:%S-%M-%H")
+        if current_timestamp < ride_timestamp:
             print("pass2")
             rides = {
                 "rideId": rides["_id"],
