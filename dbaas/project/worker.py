@@ -41,6 +41,8 @@ def Add_area():
 
 def get_upcoming_rides(args):
     source, destination = args.split(",")
+    source = int(source)
+    destination = int(destination)
     message = []
     collection = dbState('Rides')
     for rides in collection.find({"source": source, "destination": destination}, {"_id": 1, "created_by": 1, "timestamp": 1}):
