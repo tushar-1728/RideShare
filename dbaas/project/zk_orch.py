@@ -207,7 +207,7 @@ def db_read():
             return message, 200
 
         if request.args.get('COMMAND') == "READ_REQUEST_COUNT":
-            message = rpc_client.read_call("read_REQUEST_COUNT_ride:").decode()
+            message = rpc_client.read_call("read_request_count_ride:").decode()
             return message, 200
 
         if request.args.get('COMMAND') == "READ_RIDE_COUNT":
@@ -231,7 +231,7 @@ def db_read():
                 return message, 200
 
         if request.args.get('COMMAND') == "READ_REQUEST_COUNT":
-            message = rpc_client.read_call("read_REQUEST_COUNT_user:").decode()
+            message = rpc_client.read_call("read_request_count_user:").decode()
             return message, 200
 
 
@@ -275,12 +275,12 @@ def db_write():
             return make_response("", 200)
 
         if (req['COMMAND'] == "RESET_REQUEST_COUNT"):
-            params = json.dumps({"func": "reset_REQUEST_COUNT_ride"}).encode()
+            params = json.dumps({"func": "reset_request_count_ride"}).encode()
             write_call(params)
             return make_response("", 200)
 
         if (req['COMMAND'] == "ADD_REQUEST_COUNT"):
-            params = json.dumps({"func": "add_REQUEST_COUNT_ride"}).encode()
+            params = json.dumps({"func": "add_request_count_ride"}).encode()
             write_call(params)
             return make_response("", 200)
 
@@ -317,12 +317,12 @@ def db_write():
             return make_response("", 200)
 
         if (req['COMMAND'] == "RESET_REQUEST_COUNT"):
-            params = json.dumps({"func": "reset_REQUEST_COUNT_user"}).encode()
+            params = json.dumps({"func": "reset_request_count_user"}).encode()
             write_call(params)
             return make_response("", 200)
 
         if (req['COMMAND'] == "ADD_REQUEST_COUNT"):
-            params = json.dumps({"func": "add_REQUEST_COUNT_user"}).encode()
+            params = json.dumps({"func": "add_request_count_user"}).encode()
             write_call(params)
             return make_response("", 200)
 
