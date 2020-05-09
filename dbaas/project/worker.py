@@ -12,7 +12,6 @@ logging.basicConfig()
 zk = KazooClient(hosts='zoo:2181')
 zk.start()
 
-path = ""
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
 
 
@@ -314,12 +313,11 @@ def create_master(connection):
     zk.create(path, b"running")
 
     db_init()
-    channel_write = connection.channel()
-    channel_write.exchange_declare(exchange='syncQ', exchange_type='fanout')
-    channel_write.queue_declare(queue="writeQ")
-    channel_write.basic_qos(prefetch_count=1)
-    channel_write.basic_consume(queue="writeQ", on_message_callback=on_write_request)
-    channel_write.start_consuming()
+    channel = connection.channel()
+    channel.exchange_declare(exchange='syncQ', exchange_type='fanout')
+    channel.queue_declare(queue="writeQ")
+    channel.basic_consume(queue="writeQ", on_message_callback=on_write_request)
+    channel.start_consuming()
 
 
 def create_slave(connection):
@@ -338,7 +336,6 @@ def create_slave(connection):
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(queue='readQ', on_message_callback=on_read_request)
 
-    channel.exchange_declare(exchange="syncQ", exchange_type="fanout")
     result = channel.queue_declare(queue='', exclusive=True)
     queue_name = result.method.queue
     channel.queue_bind(exchange='syncQ', queue=queue_name)
@@ -356,12 +353,9 @@ def create_slave(connection):
     @zk.DataWatch(path)
     def slave_watch(data, stat):
         print("entered data watch of slave")
-        print(data)
-        print(path)
         if(data):
             data = data.decode()
             if data == "modified":
-                print("data verified")
                 zk.delete(path)
                 print("deleted slave znode")
                 pid = path.split("/")[3]
@@ -373,9 +367,7 @@ def create_slave(connection):
 def change_designation(connection, channel):
     print("entered designation function")
     channel.stop_consuming()
-    # channel.close()
     print("channel closed")
-    # connection.close()
     print("designation changed")
     connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
     channel_write = connection.channel()

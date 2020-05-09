@@ -64,8 +64,6 @@ def master_watch(data, stat):
                 pid = p_client.inspect_container(i.name)['State']['Pid']
                 pid_list.append(pid)
             min_pid = min(pid_list)
-            zk.set("/worker/slave/" + str(min_pid), b"modified")
-            print("called data watch of slave", str(min_pid))
             min_pid_index = pid_list.index(min_pid)
             container = SLAVE_LIST.pop(min_pid_index)
             MASTER_LIST.append(container)
@@ -82,6 +80,8 @@ def master_watch(data, stat):
             message = ("running " + str(pid)).encode()
             zk.set("/worker/slave", message)
             print("created new slave container")
+            zk.set("/worker/slave/" + str(min_pid), b"modified")
+            print("called data watch of slave", str(min_pid))
             print("exiting data watch of master")
 
 
@@ -163,7 +163,7 @@ def timer_func():
         zk.delete("/worker/slave/" + str(pid))
 
     REQUEST_COUNT = 0
-    timer = threading.Timer(0.5 * 60, timer_func)
+    timer = threading.Timer(2 * 60, timer_func)
     timer.start()
 
 
@@ -375,6 +375,12 @@ def crash_master():
 if __name__ == '__main__':
     client = docker.DockerClient(base_url='unix://var/run/docker.sock')
     p_client = docker.APIClient(base_url='unix://var/run/docker.sock')
+
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
+    channel = connection.channel()
+    channel.exchange_declare(exchange='syncQ', exchange_type='fanout')
+    channel.queue_declare(queue="writeQ")
+    channel.queue_declare(queue='readQ')
 
     MASTER_COUNT += 1
     SLAVE_COUNT += 1
