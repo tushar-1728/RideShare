@@ -11,7 +11,7 @@ app = Flask(__name__)
 @app.route("/api/v1/rides", methods=["POST"])
 def addRide():
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "RIDE",
             "COMMAND": "ADD_REQUEST_COUNT"
@@ -34,14 +34,14 @@ def addRide():
             return make_response('Check timestamp.', 400)
 
         user_list = requests.get(
-            "http://users_web:5000/api/v1/users",
+            "http://54.227.171.39:80/api/v1/users",
             headers={'Origin': '54.208.115.23'}
         ).json()
         if(username not in user_list):
             return make_response('Username is not valid.', 400)
 
         source_not_exist = requests.get(
-            "http://orchestrator:5000/api/v1/db/read",
+            "http://34.238.33.155:80/api/v1/db/read",
             params={
                 "ORIGIN": "RIDE",
                 "COMMAND": "EXISTS",
@@ -51,7 +51,7 @@ def addRide():
             }
         ).json()["count"] == 0
         destination_not_exist = requests.get(
-            "http://orchestrator:5000/api/v1/db/read",
+            "http://34.238.33.155:80/api/v1/db/read",
             params={
                 "ORIGIN": "RIDE",
                 "COMMAND": "EXISTS",
@@ -66,7 +66,7 @@ def addRide():
             return make_response('Source or destination does not exist.', 400)
 
         requests.post(
-            "http://orchestrator:5000/api/v1/db/write",
+            "http://34.238.33.155:80/api/v1/db/write",
             data=json.dumps({
                 "ORIGIN": "RIDE",
                 "COMMAND": "INSERT",
@@ -77,7 +77,7 @@ def addRide():
         )
 
         requests.post(
-            "http://orchestrator:5000/api/v1/db/write",
+            "http://34.238.33.155:80/api/v1/db/write",
             data=json.dumps({
                 "ORIGIN": "RIDE",
                 "COMMAND": "ADD_RIDE_COUNT"
@@ -93,7 +93,7 @@ def addRide():
 @app.route('/api/v1/rides', methods=['GET'])
 def list_rides():
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "RIDE",
             "COMMAND": "ADD_REQUEST_COUNT"
@@ -105,7 +105,7 @@ def list_rides():
         return make_response('Source or destination is empty', 400)
 
     source_not_exist = requests.get(
-        "http://orchestrator:5000/api/v1/db/read",
+        "http://34.238.33.155:80/api/v1/db/read",
         params={
             "ORIGIN": "RIDE",
             "COMMAND": "EXISTS",
@@ -115,7 +115,7 @@ def list_rides():
         }).json()["count"] == 0
 
     destination_not_exist = requests.get(
-        "http://orchestrator:5000/api/v1/db/read",
+        "http://34.238.33.155:80/api/v1/db/read",
         params={
             "ORIGIN": "RIDE",
             "COMMAND": "EXISTS",
@@ -128,7 +128,7 @@ def list_rides():
         return make_response('Source or destination does not exist.', 400)
 
     res = requests.get(
-        'http://orchestrator:5000/api/v1/db/read',
+        'http://34.238.33.155:80/api/v1/db/read',
         params={
             "ORIGIN": "RIDE",
             'COMMAND': 'Upcoming',
@@ -145,7 +145,7 @@ def list_rides():
 @app.route('/api/v1/rides/<rideid>', methods=['GET'])
 def details_ride(rideid):
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "RIDE",
             "COMMAND": "ADD_REQUEST_COUNT"
@@ -156,7 +156,7 @@ def details_ride(rideid):
         return make_response('', 400)
 
     if requests.get(
-        "http://orchestrator:5000/api/v1/db/read",
+        "http://34.238.33.155:80/api/v1/db/read",
         params={
             "ORIGIN": "RIDE",
             "COMMAND": "EXISTS",
@@ -168,7 +168,7 @@ def details_ride(rideid):
         return make_response('', 400)
 
     message = requests.get(
-        'http://orchestrator:5000/api/v1/db/read',
+        'http://34.238.33.155:80/api/v1/db/read',
         params={
             "ORIGIN": "RIDE",
             'COMMAND': 'Ride_Details',
@@ -185,7 +185,7 @@ def details_ride(rideid):
 @app.route('/api/v1/rides/<rideid>', methods=['POST'])
 def Join_ride(rideid):
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "RIDE",
             "COMMAND": "ADD_REQUEST_COUNT"
@@ -204,7 +204,7 @@ def Join_ride(rideid):
         return make_response('', 400)
 
     if requests.get(
-        "http://orchestrator:5000/api/v1/db/read",
+        "http://34.238.33.155:80/api/v1/db/read",
         params={
             "ORIGIN": "RIDE",
             "COMMAND": "EXISTS",
@@ -217,7 +217,7 @@ def Join_ride(rideid):
         return make_response('', 400)
 
     user_list = requests.get(
-        "http://users_web:5000/api/v1/users",
+        "http://54.227.171.39:80/api/v1/users",
         headers={'Origin': '54.208.115.23'}
     ).json()
 
@@ -227,7 +227,7 @@ def Join_ride(rideid):
         return make_response('', 400)
 
     message = requests.get(
-        'http://orchestrator:5000/api/v1/db/read',
+        'http://34.238.33.155:80/api/v1/db/read',
         params={
             "ORIGIN": "RIDE",
             'COMMAND': 'Ride_Details',
@@ -244,7 +244,7 @@ def Join_ride(rideid):
         return make_response("", 400)
 
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "RIDE",
             "COMMAND": "Update_Ride",
@@ -260,7 +260,7 @@ def Join_ride(rideid):
 @app.route('/api/v1/rides/<rideid>', methods=['DELETE'])
 def deleteride(rideid):
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "RIDE",
             "COMMAND": "ADD_REQUEST_COUNT"
@@ -270,7 +270,7 @@ def deleteride(rideid):
         return make_response('', 400)
 
     if requests.get(
-        "http://orchestrator:5000/api/v1/db/read",
+        "http://34.238.33.155:80/api/v1/db/read",
         params={
             "ORIGIN": "RIDE",
             "COMMAND": "EXISTS",
@@ -282,7 +282,7 @@ def deleteride(rideid):
         return make_response('', 400)
 
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "RIDE",
             "COMMAND": "DELETE",
@@ -298,7 +298,7 @@ def deleteride(rideid):
 @app.route('/api/v1/db/clear', methods=['POST'])
 def delete_all():
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "RIDE",
             "COMMAND": "DELETE_ALL"
@@ -311,7 +311,7 @@ def delete_all():
 @app.route('/api/v1/_count', methods=['GET'])
 def count_requests():
     msg = requests.get(
-        "http://orchestrator:5000/api/v1/db/read",
+        "http://34.238.33.155:80/api/v1/db/read",
         params={
             "ORIGIN": "RIDE",
             "COMMAND": "READ_REQUEST_COUNT"
@@ -325,7 +325,7 @@ def count_requests():
 @app.route('/api/v1/_count', methods=['DELETE'])
 def reset_request_count():
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "RIDE",
             "COMMAND": "RESET_REQUEST_COUNT"
@@ -338,14 +338,14 @@ def reset_request_count():
 @app.route('/api/v1/rides/count', methods=['GET'])
 def count_rides_created():
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "RIDE",
             "COMMAND": "ADD_REQUEST_COUNT"
         })
     )
     msg = requests.get(
-        "http://orchestrator:5000/api/v1/db/read",
+        "http://34.238.33.155:80/api/v1/db/read",
         params={
             "ORIGIN": "RIDE",
             "COMMAND": "READ_RIDE_COUNT"
