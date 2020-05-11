@@ -43,7 +43,33 @@ services:
     links:
       - rmq
       - zoo
-    restart: on-failure
+    # restart: on-failure
+
+  rides_web:
+    # build: ../../user-ride/ride/.
+    image: rides:latest
+    container_name: rides_container
+    command: python server.py
+    restart: always
+    networks:
+      - orch-network
+    environment:
+      - TEAM_NAME=CC_0113_0221_0913_1125
+    ports:
+      - "8080:5000"
+
+  users_web:
+    # build: ../../user-ride/user/.
+    image: users:latest
+    container_name: users_container
+    command: python server.py
+    restart: always
+    networks:
+      - orch-network
+    environment:
+      - TEAM_NAME=CC_0113_0221_0913_1125
+    ports:
+      - "8000:5000"
 
 networks:
   orch-network:
