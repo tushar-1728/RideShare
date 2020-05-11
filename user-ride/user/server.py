@@ -20,7 +20,7 @@ def is_sha1(maybe_sha):
 @app.route('/api/v1/users', methods=['PUT'])
 def adduser():
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "USER",
             "COMMAND": "ADD_REQUEST_COUNT"
@@ -40,7 +40,7 @@ def adduser():
         return make_response('Password is not as per given norms.', 400)
 
     if (requests.get(
-        "http://orchestrator:5000/api/v1/db/read",
+        "http://34.238.33.155:80/api/v1/db/read",
         params={
             "ORIGIN": "USER",
             "COMMAND": "EXISTS",
@@ -52,7 +52,7 @@ def adduser():
         return make_response('User already exists.', 400)
 
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "USER",
             "COMMAND": "INSERT",
@@ -69,7 +69,7 @@ def adduser():
 @app.route('/api/v1/users/<username>', methods=['DELETE'])
 def deleteuser(username):
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "USER",
             "COMMAND": "ADD_REQUEST_COUNT"
@@ -79,7 +79,7 @@ def deleteuser(username):
         return make_response('Usename is empty.', 400)
 
     if (requests.get(
-        "http://orchestrator:5000/api/v1/db/read",
+        "http://34.238.33.155:80/api/v1/db/read",
         params={
             "ORIGIN": "USER",
             "COMMAND": "EXISTS",
@@ -91,7 +91,7 @@ def deleteuser(username):
         return make_response('User does not exist.', 400)
 
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "USER",
             "COMMAND": "DELETE",
@@ -108,14 +108,14 @@ def deleteuser(username):
 @app.route('/api/v1/users', methods=['GET'])
 def read_all():
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "USER",
             "COMMAND": "ADD_REQUEST_COUNT"
         })
     )
     msg = requests.get(
-        "http://orchestrator:5000/api/v1/db/read",
+        "http://34.238.33.155:80/api/v1/db/read",
         params={
             "ORIGIN": "USER",
             "COMMAND": "READ_ALL",
@@ -132,7 +132,7 @@ def read_all():
 @app.route('/api/v1/db/clear', methods=['POST'])
 def delete_all():
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "USER",
             "COMMAND": "DELETE_ALL"
@@ -145,7 +145,7 @@ def delete_all():
 @app.route('/api/v1/_count', methods=['GET'])
 def count_requests():
     msg = requests.get(
-        "http://orchestrator:5000/api/v1/db/read",
+        "http://34.238.33.155:80/api/v1/db/read",
         params={
             "ORIGIN": "USER",
             "COMMAND": "READ_REQUEST_COUNT"
@@ -159,7 +159,7 @@ def count_requests():
 @app.route('/api/v1/_count', methods=['DELETE'])
 def reset_request_count():
     requests.post(
-        "http://orchestrator:5000/api/v1/db/write",
+        "http://34.238.33.155:80/api/v1/db/write",
         data=json.dumps({
             "ORIGIN": "USER",
             "COMMAND": "RESET_REQUEST_COUNT"

@@ -275,6 +275,31 @@ def get_worker_list():
     return make_response(str(pid_list), 200)
 
 
+# api crash slave
+@app.route('/api/v1/crash/slave', methods=['POST'])
+def crash_slave():
+    global SLAVE_LIST
+    global WORKER_COUNT
+    pid_list = []
+    for i in SLAVE_LIST:
+        pid_list.append(p_client.inspect_container(i.name)['State']['Pid'])
+    max_pid = max(pid_list)
+    max_pid_index = pid_list.index(max_pid)
+    container = SLAVE_LIST.pop(max_pid_index)
+    container.stop(timeout=0)
+    container.remove()
+    WORKER_COUNT += 1
+    container = client.containers.run(
+        "workers:latest",
+        detach=True,
+        name="worker_container" + str(WORKER_COUNT),
+        network="orch-network",
+        command=["sh", "-c", "service mongodb start; python3 worker.py 0"]
+    )
+    SLAVE_LIST.append(container)
+    return make_response(str(max_pid), 200)
+
+
 if __name__ == '__main__':
     client = docker.DockerClient(base_url='unix://var/run/docker.sock')
     p_client = docker.APIClient(base_url='unix://var/run/docker.sock')
