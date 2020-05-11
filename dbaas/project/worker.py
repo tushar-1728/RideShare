@@ -4,13 +4,7 @@ import csv
 import sys
 import pymongo
 import pika
-import threading
-from kazoo.client import KazooClient
-import logging
 
-logging.basicConfig()
-zk = KazooClient(hosts='zoo:2181')
-zk.start()
 
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
 
@@ -44,7 +38,9 @@ def get_upcoming_rides(args):
     destination = int(destination)
     message = []
     collection = dbState('Rides')
-    for rides in collection.find({"source": source, "destination": destination}, {"_id": 1, "created_by": 1, "timestamp": 1}):
+    search_parameters = {"source": source, "destination": destination}
+    display_parameters = {"_id": 1, "created_by": 1, "timestamp": 1}
+    for rides in collection.find(search_parameters, display_parameters):
         print("pass1")
         current_timestamp = datetime.strptime(datetime.now().strftime("%d-%m-%Y:%S-%M-%H"), "%d-%m-%Y:%S-%M-%H")
         ride_timestamp = datetime.strptime(rides["timestamp"], "%d-%m-%Y:%S-%M-%H")
@@ -306,12 +302,6 @@ def on_sync_request(ch, method, props, body):
 def create_master(connection):
     print("master mode")
 
-    data = zk.get("/worker/master")[0]
-    zk.set("/worker/master", b"")
-    pid = data.decode().split()[1]
-    path = "/worker/master/" + pid
-    zk.create(path, b"running")
-
     db_init()
     channel = connection.channel()
     channel.exchange_declare(exchange='syncQ', exchange_type='fanout')
@@ -321,14 +311,7 @@ def create_master(connection):
 
 
 def create_slave(connection):
-    global path
     print("slave mode")
-
-    data = zk.get("/worker/slave")[0]
-    zk.set("/worker/slave", b"")
-    pid = data.decode().split()[1]
-    path = "/worker/slave/" + pid
-    zk.create(path, b"running")
 
     db_init()
     channel = connection.channel()
@@ -347,35 +330,7 @@ def create_slave(connection):
         routing_key="writeQ",
         body=json.dumps({"func": "sync_command"}).encode()
     )
-    t1 = threading.Thread(target=channel.start_consuming)
-    t1.start()
-
-    @zk.DataWatch(path)
-    def slave_watch(data, stat):
-        print("entered data watch of slave")
-        if(data):
-            data = data.decode()
-            if data == "modified":
-                zk.delete(path)
-                print("deleted slave znode")
-                pid = path.split("/")[3]
-                zk.create("/worker/master/" + pid, b"running")
-                print("created worker znode")
-                change_designation(connection, channel)
-
-
-def change_designation(connection, channel):
-    print("entered designation function")
-    channel.stop_consuming()
-    print("channel closed")
-    print("designation changed")
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
-    channel_write = connection.channel()
-    channel_write.exchange_declare(exchange='syncQ', exchange_type='fanout')
-    channel_write.queue_declare(queue="writeQ")
-    channel_write.basic_qos(prefetch_count=1)
-    channel_write.basic_consume(queue="writeQ", on_message_callback=on_write_request)
-    channel_write.start_consuming()
+    channel.start_consuming()
 
 
 if __name__ == '__main__':
