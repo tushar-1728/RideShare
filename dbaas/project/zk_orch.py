@@ -4,6 +4,7 @@ import threading
 from flask import Flask, request, make_response
 import pika
 import docker
+import requests
 
 app = Flask(__name__)
 
@@ -259,6 +260,26 @@ def db_write():
             params = json.dumps({"func": "add_request_count_user"}).encode()
             write_call(params)
             return make_response("", 200)
+
+
+# api db clear
+@app.route('/api/v1/db/clear', methods=['POST'])
+def delete_all():
+    requests.post(
+        "http://34.238.33.155:80/api/v1/db/write",
+        data=json.dumps({
+            "ORIGIN": "USER",
+            "COMMAND": "DELETE_ALL"
+        })
+    )
+    requests.post(
+        "http://34.238.33.155:80/api/v1/db/write",
+        data=json.dumps({
+            "ORIGIN": "RIDE",
+            "COMMAND": "DELETE_ALL"
+        })
+    )
+    return make_response('', 200)
 
 
 # api list workers
