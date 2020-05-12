@@ -34,8 +34,8 @@ def Add_area():
 
 def get_upcoming_rides(args):
     source, destination = args.split(",")
-    source = int(source)
-    destination = int(destination)
+    # source = int(source)
+    # destination = int(destination)
     message = []
     collection = dbState('Rides')
     search_parameters = {"source": source, "destination": destination}
