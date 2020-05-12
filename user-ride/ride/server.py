@@ -21,8 +21,8 @@ def addRide():
     if req == "":
         return make_response('', 400)
     username = req['created_by']
-    source = req['source']
-    destination = req['destination']
+    source = int(req['source'])
+    destination = int(req['destination'])
     timestamp = req['timestamp']
     if (not(username or source or destination or timestamp)):
         return make_response('Either of the 4 required input is missing.', 400)
@@ -99,8 +99,8 @@ def list_rides():
             "COMMAND": "ADD_REQUEST_COUNT"
         })
     )
-    source = request.args.get('source')
-    destination = request.args.get('destination')
+    source = int(request.args.get('source'))
+    destination = int(request.args.get('destination'))
     if source == '' or source is None or destination is None or destination == '':
         return make_response('Source or destination is empty', 400)
 
