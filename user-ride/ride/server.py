@@ -34,8 +34,8 @@ def addRide():
             return make_response('Check timestamp.', 400)
 
         user_list = requests.get(
-            "http://54.227.171.39:80/api/v1/users",
-            headers={'Origin': '54.208.115.23'}
+            "http://project-1197030847.us-east-1.elb.amazonaws.com/api/v1/users",
+            headers={'Origin': '3.91.137.9'}
         ).json()
         if(username not in user_list):
             return make_response('Username is not valid.', 400)
@@ -210,8 +210,8 @@ def Join_ride(rideid):
         return make_response('', 400)
 
     user_list = requests.get(
-        "http://54.227.171.39:80/api/v1/users",
-        headers={'Origin': '54.208.115.23'}
+        "http://project-1197030847.us-east-1.elb.amazonaws.com/api/v1/users",
+        headers={'Origin': '3.91.137.9'}
     ).json()
 
     if(username not in user_list):
