@@ -40,30 +40,30 @@ def addRide():
         if(username not in user_list):
             return make_response('Username is not valid.', 400)
 
-        # source_not_exist = requests.get(
-        #     "http://34.238.33.155:80/api/v1/db/read",
-        #     params={
-        #         "ORIGIN": "RIDE",
-        #         "COMMAND": "EXISTS",
-        #         "FIELD": "Area No",
-        #         "VALUE": source,
-        #         "COLLECTION": "Area"
-        #     }
-        # ).json()["count"] == 0
-        # destination_not_exist = requests.get(
-        #     "http://34.238.33.155:80/api/v1/db/read",
-        #     params={
-        #         "ORIGIN": "RIDE",
-        #         "COMMAND": "EXISTS",
-        #         "FIELD": "Area No",
-        #         "VALUE": destination,
-        #         "COLLECTION": "Area"
-        #     }
-        # ).json()["count"] == 0
+        source_not_exist = requests.get(
+            "http://34.238.33.155:80/api/v1/db/read",
+            params={
+                "ORIGIN": "RIDE",
+                "COMMAND": "EXISTS",
+                "FIELD": "Area No",
+                "VALUE": source,
+                "COLLECTION": "Area"
+            }
+        ).json()["count"] == 0
+        destination_not_exist = requests.get(
+            "http://34.238.33.155:80/api/v1/db/read",
+            params={
+                "ORIGIN": "RIDE",
+                "COMMAND": "EXISTS",
+                "FIELD": "Area No",
+                "VALUE": destination,
+                "COLLECTION": "Area"
+            }
+        ).json()["count"] == 0
 
-        # if source_not_exist or destination_not_exist:
-        #     print(4)
-        #     return make_response('Source or destination does not exist.', 400)
+        if source_not_exist or destination_not_exist:
+            print(4)
+            return make_response('Source or destination does not exist.', 400)
 
         requests.post(
             "http://34.238.33.155:80/api/v1/db/write",
@@ -104,28 +104,28 @@ def list_rides():
     if source == '' or source is None or destination is None or destination == '':
         return make_response('Source or destination is empty', 400)
 
-    # source_not_exist = requests.get(
-    #     "http://34.238.33.155:80/api/v1/db/read",
-    #     params={
-    #         "ORIGIN": "RIDE",
-    #         "COMMAND": "EXISTS",
-    #         "FIELD": "Area No",
-    #         "VALUE": source,
-    #         "COLLECTION": "Area"
-    #     }).json()["count"] == 0
+    source_not_exist = requests.get(
+        "http://34.238.33.155:80/api/v1/db/read",
+        params={
+            "ORIGIN": "RIDE",
+            "COMMAND": "EXISTS",
+            "FIELD": "Area No",
+            "VALUE": source,
+            "COLLECTION": "Area"
+        }).json()["count"] == 0
 
-    # destination_not_exist = requests.get(
-    #     "http://34.238.33.155:80/api/v1/db/read",
-    #     params={
-    #         "ORIGIN": "RIDE",
-    #         "COMMAND": "EXISTS",
-    #         "FIELD": "Area No",
-    #         "VALUE": destination,
-    #         "COLLECTION": "Area"
-    #     }).json()["count"] == 0
+    destination_not_exist = requests.get(
+        "http://34.238.33.155:80/api/v1/db/read",
+        params={
+            "ORIGIN": "RIDE",
+            "COMMAND": "EXISTS",
+            "FIELD": "Area No",
+            "VALUE": destination,
+            "COLLECTION": "Area"
+        }).json()["count"] == 0
 
-    # if source_not_exist or destination_not_exist:
-    #     return make_response('Source or destination does not exist.', 400)
+    if source_not_exist or destination_not_exist:
+        return make_response('Source or destination does not exist.', 400)
 
     res = requests.get(
         'http://34.238.33.155:80/api/v1/db/read',
