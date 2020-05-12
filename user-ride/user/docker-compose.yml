@@ -16,5 +16,3 @@ services:
 
 networks:
   users_network:
-    external:
-      name: cc_network
