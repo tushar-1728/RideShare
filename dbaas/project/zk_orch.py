@@ -17,9 +17,8 @@ write_channel = connection.channel()
 result = write_channel.queue_declare(queue='writeQ')
 
 logging.basicConfig()
-zk = KazooClient(hosts='zoo:2181', handler=SequentialGeventHandler())
-event = zk.start_async()
-event.wait(timeout=30)
+zk = KazooClient(hosts='zoo:2181')
+zk.start()
 
 TIMER_START_FLAG = 0
 REQUEST_COUNT = 0
@@ -398,7 +397,7 @@ if __name__ == '__main__':
     pid = p_client.inspect_container(container.name)['State']['Pid']
     MASTER_LIST.append(container)
     message = ("running " + str(pid)).encode()
-    zk.create_async("/worker/master", message, makepath=True)
+    zk.create("/worker/master", message, makepath=True)
 
     WORKER_COUNT += 1
     container = client.containers.run(
@@ -411,6 +410,6 @@ if __name__ == '__main__':
     pid = p_client.inspect_container(container.name)['State']['Pid']
     SLAVE_LIST.append(container)
     message = ("running " + str(pid)).encode()
-    zk.create_async("/worker/slave", message, makepath=True)
+    zk.create("/worker/slave", message, makepath=True)
 
     app.run(host='0.0.0.0', debug=False)
