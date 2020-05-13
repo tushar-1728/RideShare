@@ -6,11 +6,13 @@ import pymongo
 import pika
 import threading
 from kazoo.client import KazooClient
+from kazoo.handlers.gevent import SequentialGeventHandler
 import logging
 
 logging.basicConfig()
-zk = KazooClient(hosts='zoo:2181')
-zk.start()
+zk = KazooClient(hosts='zoo:2181', handler=SequentialGeventHandler())
+event = zk.start_async()
+event.wait(timeout=30)
 
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
 
