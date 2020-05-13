@@ -307,18 +307,19 @@ def create_master(connection):
     print("master mode")
 
     data = zk.get_async("/worker/master")
-    data = data.get()[0]
-    zk.set_async("/worker/master", b"")
-    pid = data.decode().split()[1]
-    path = "/worker/master/" + pid
-    zk.create_async(path, b"running")
+    data = data.get()
+    print(data)
+    # zk.set_async("/worker/master", b"")
+    # pid = data.decode().split()[1]
+    # path = "/worker/master/" + pid
+    # zk.create_async(path, b"running")
 
-    db_init()
-    channel = connection.channel()
-    channel.exchange_declare(exchange='syncQ', exchange_type='fanout')
-    channel.queue_declare(queue="writeQ")
-    channel.basic_consume(queue="writeQ", on_message_callback=on_write_request)
-    channel.start_consuming()
+    # db_init()
+    # channel = connection.channel()
+    # channel.exchange_declare(exchange='syncQ', exchange_type='fanout')
+    # channel.queue_declare(queue="writeQ")
+    # channel.basic_consume(queue="writeQ", on_message_callback=on_write_request)
+    # channel.start_consuming()
 
 
 def create_slave(connection):
@@ -326,44 +327,45 @@ def create_slave(connection):
     print("slave mode")
 
     data = zk.get_async("/worker/slave")
-    data = data.get()[0]
-    zk.set_async("/worker/slave", b"")
-    pid = data.decode().split()[1]
-    path = "/worker/slave/" + pid
-    zk.create_async(path, b"running")
+    data = data.get()
+    print(data)
+    # zk.set_async("/worker/slave", b"")
+    # pid = data.decode().split()[1]
+    # path = "/worker/slave/" + pid
+    # zk.create_async(path, b"running")
 
-    db_init()
-    channel = connection.channel()
-    channel.queue_declare(queue='readQ')
-    channel.basic_qos(prefetch_count=1)
-    channel.basic_consume(queue='readQ', on_message_callback=on_read_request)
+    # db_init()
+    # channel = connection.channel()
+    # channel.queue_declare(queue='readQ')
+    # channel.basic_qos(prefetch_count=1)
+    # channel.basic_consume(queue='readQ', on_message_callback=on_read_request)
 
-    result = channel.queue_declare(queue='', exclusive=True)
-    queue_name = result.method.queue
-    channel.queue_bind(exchange='syncQ', queue=queue_name)
-    channel.basic_consume(queue=queue_name, on_message_callback=on_sync_request, auto_ack=True)
+    # result = channel.queue_declare(queue='', exclusive=True)
+    # queue_name = result.method.queue
+    # channel.queue_bind(exchange='syncQ', queue=queue_name)
+    # channel.basic_consume(queue=queue_name, on_message_callback=on_sync_request, auto_ack=True)
 
-    print("sync command sent ")
-    channel.basic_publish(
-        exchange="",
-        routing_key="writeQ",
-        body=json.dumps({"func": "sync_command"}).encode()
-    )
-    t1 = threading.Thread(target=channel.start_consuming)
-    t1.start()
+    # print("sync command sent ")
+    # channel.basic_publish(
+    #     exchange="",
+    #     routing_key="writeQ",
+    #     body=json.dumps({"func": "sync_command"}).encode()
+    # )
+    # t1 = threading.Thread(target=channel.start_consuming)
+    # t1.start()
 
-    @zk.DataWatch(path)
-    def slave_watch(data, stat):
-        print("entered data watch of slave")
-        if(data):
-            data = data.decode()
-            if data == "modified":
-                zk.delete(path)
-                print("deleted slave znode")
-                pid = path.split("/")[3]
-                zk.create("/worker/master/" + pid, b"running")
-                print("created worker znode")
-                change_designation(connection, channel)
+    # @zk.DataWatch(path)
+    # def slave_watch(data, stat):
+    #     print("entered data watch of slave")
+    #     if(data):
+    #         data = data.decode()
+    #         if data == "modified":
+    #             zk.delete(path)
+    #             print("deleted slave znode")
+    #             pid = path.split("/")[3]
+    #             zk.create("/worker/master/" + pid, b"running")
+    #             print("created worker znode")
+    #             change_designation(connection, channel)
 
 
 def change_designation(connection, channel):
