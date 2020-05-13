@@ -6,7 +6,6 @@ from flask import Flask, request, make_response
 import pika
 import docker
 from kazoo.client import KazooClient
-from kazoo.handlers.gevent import SequentialGeventHandler
 
 app = Flask(__name__)
 
@@ -155,6 +154,8 @@ def timer_func():
         pid = p_client.inspect_container(container.name)['State']['Pid']
         message = ("running " + str(pid)).encode()
         zk.set("/worker/slave", message)
+        lock = zk.ReadLock("/worker/slave")
+        lock.acquire()
     while(req_SLAVE_COUNT < SLAVE_COUNT and SLAVE_COUNT > 1):
         SLAVE_COUNT -= 1
         container = SLAVE_LIST.pop()
@@ -164,7 +165,8 @@ def timer_func():
         zk.delete("/worker/slave/" + str(pid))
 
     REQUEST_COUNT = 0
-    timer = threading.Timer(2 * 60, timer_func)
+    print("\n\nTIMER RESTARTED\n\n")
+    timer = threading.Timer(1.5 * 60, timer_func)
     timer.start()
 
 
@@ -178,7 +180,7 @@ def db_read():
 
     if(TIMER_START_FLAG == 0):
         TIMER_START_FLAG = 1
-        timer = threading.Timer(0.5 * 60, timer_func)
+        timer = threading.Timer(1.5 * 60, timer_func)
         print("timer func started")
         timer.start()
 

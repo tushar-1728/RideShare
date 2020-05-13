@@ -12,7 +12,8 @@ logging.basicConfig()
 zk = KazooClient(hosts='zoo:2181')
 zk.start()
 
-connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
+
+PID = ""
 
 
 def dbState(collection_name):
@@ -302,14 +303,15 @@ def on_sync_request(ch, method, props, body):
 
 
 def create_master(connection):
+    global PID
     print("master mode")
 
     data = zk.get("/worker/master")[0]
     lock = zk.ReadLock("/worker/master")
     lock.release()
     zk.set("/worker/master", b"")
-    pid = data.decode().split()[1]
-    path = "/worker/master/" + pid
+    PID = data.decode().split()[1]
+    path = "/worker/master/" + PID
     zk.create(path, b"running")
 
     db_init()
@@ -321,15 +323,15 @@ def create_master(connection):
 
 
 def create_slave(connection):
-    global path
+    global PID
     print("slave mode")
 
     data = zk.get("/worker/slave")[0]
     lock = zk.ReadLock("/worker/slave")
     lock.release()
     zk.set("/worker/slave", b"")
-    pid = data.decode().split()[1]
-    path = "/worker/slave/" + pid
+    PID = data.decode().split()[1]
+    path = "/worker/slave/" + PID
     zk.create(path, b"running")
 
     db_init()
@@ -382,6 +384,7 @@ def change_designation(connection, channel):
 
 if __name__ == '__main__':
     designation = int(sys.argv[1])
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
     print("Ready for receiving requests.")
     if(designation == 1):
         create_master(connection)
