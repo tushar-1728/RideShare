@@ -398,6 +398,8 @@ if __name__ == '__main__':
     MASTER_LIST.append(container)
     message = ("running " + str(pid)).encode()
     zk.create("/worker/master", message, makepath=True)
+    lock = zk.ReadLock("/worker/master")
+    lock.aquire()
 
     WORKER_COUNT += 1
     container = client.containers.run(
@@ -411,5 +413,7 @@ if __name__ == '__main__':
     SLAVE_LIST.append(container)
     message = ("running " + str(pid)).encode()
     zk.create("/worker/slave", message, makepath=True)
+    lock = zk.ReadLock("/worker/slave")
+    lock.aquire()
 
     app.run(host='0.0.0.0', debug=False)

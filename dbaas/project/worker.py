@@ -305,6 +305,8 @@ def create_master(connection):
     print("master mode")
 
     data = zk.get("/worker/master")[0]
+    lock = zk.ReadLock("/worker/master")
+    lock.release()
     zk.set("/worker/master", b"")
     pid = data.decode().split()[1]
     path = "/worker/master/" + pid
@@ -323,6 +325,8 @@ def create_slave(connection):
     print("slave mode")
 
     data = zk.get("/worker/slave")[0]
+    lock = zk.ReadLock("/worker/slave")
+    lock.release()
     zk.set("/worker/slave", b"")
     pid = data.decode().split()[1]
     path = "/worker/slave/" + pid
