@@ -45,11 +45,9 @@ def get_upcoming_rides(args):
     message = []
     collection = dbState('Rides')
     for rides in collection.find({"source": source, "destination": destination}, {"_id": 1, "created_by": 1, "timestamp": 1}):
-        print("pass1")
         current_timestamp = datetime.strptime(datetime.now().strftime("%d-%m-%Y:%S-%M-%H"), "%d-%m-%Y:%S-%M-%H")
         ride_timestamp = datetime.strptime(rides["timestamp"], "%d-%m-%Y:%S-%M-%H")
         if current_timestamp < ride_timestamp:
-            print("pass2")
             rides = {
                 "rideId": rides["_id"],
                 "username": rides["created_by"],
@@ -306,11 +304,12 @@ def on_sync_request(ch, method, props, body):
 def create_master(connection):
     print("master mode")
 
-    data = zk.get("/worker/master")[0]
-    zk.set("/worker/master", b"")
+    data = zk.get_async("/worker/master")
+    data = data.get()[0]
+    zk.set_async("/worker/master", b"")
     pid = data.decode().split()[1]
     path = "/worker/master/" + pid
-    zk.create(path, b"running")
+    zk.create_async(path, b"running")
 
     db_init()
     channel = connection.channel()
@@ -324,11 +323,12 @@ def create_slave(connection):
     global path
     print("slave mode")
 
-    data = zk.get("/worker/slave")[0]
-    zk.set("/worker/slave", b"")
+    data = zk.get_async("/worker/slave")
+    data = data.get()[0]
+    zk.set_async("/worker/slave", b"")
     pid = data.decode().split()[1]
     path = "/worker/slave/" + pid
-    zk.create(path, b"running")
+    zk.create_async(path, b"running")
 
     db_init()
     channel = connection.channel()
