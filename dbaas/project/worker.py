@@ -312,7 +312,6 @@ def create_master(connection):
 
     data = zk.get("/worker/master")[0]
     PID = data.decode().split()[1]
-    path = "/worker/master/" + PID
 
     db_init()
     channel = connection.channel()
@@ -328,7 +327,6 @@ def create_slave(connection):
 
     data = zk.get("/worker/slave")[0]
     PID = data.decode().split()[1]
-    path = "/worker/slave/" + PID
 
     db_init()
     channel = connection.channel()
