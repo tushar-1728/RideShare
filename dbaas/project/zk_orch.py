@@ -71,6 +71,7 @@ def master_watch(data, stat):
             MASTER_LIST.append(container)
 
             zk.delete_async("/worker/slave/" + str(min_pid))
+            zk.set("/worker/slave", b"deleted")
             zk.create_async("/worker/master/" + str(min_pid), b"running")
 
             params = {"_id":-1, "data": {"func": "change_designation", "pid": str(min_pid)}}
@@ -80,20 +81,6 @@ def master_watch(data, stat):
                 routing_key="",
                 body=params
             )
-
-            WORKER_COUNT += 1
-            container = client.containers.run(
-                "workers:latest",
-                detach=True,
-                name="worker_container" + str(WORKER_COUNT),
-                network="orch-network",
-                command=["sh", "-c", "service mongodb start; python3 worker.py 0"]
-            )
-            pid = p_client.inspect_container(container.name)['State']['Pid']
-            SLAVE_LIST.append(container)
-            message = ("running " + str(pid)).encode()
-            zk.set("/worker/slave", message)
-            zk.create_async("/worker/slave/" + str(pid), b"running")
             print("exiting data watch of master")
 
 
