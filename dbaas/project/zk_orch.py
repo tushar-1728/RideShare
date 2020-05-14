@@ -48,7 +48,7 @@ def slave_watch(data, stat):
             pid = p_client.inspect_container(container.name)['State']['Pid']
             message = ("running " + str(pid)).encode()
             zk.set("/worker/slave", message)
-            zk.create("/worker/slave" + str(pid), b"running")
+            zk.create_async("/worker/slave" + str(pid), b"running")
 
 
 @zk.DataWatch("/worker/master")
@@ -67,6 +67,8 @@ def master_watch(data, stat):
             min_pid = min(pid_list)
             min_pid_index = pid_list.index(min_pid)
             container = SLAVE_LIST.pop(min_pid_index)
+            container.exec_run("pkill python", detach=True)
+            container.exec_run("python3 worker.py 1", detach=True)
             MASTER_LIST.append(container)
             WORKER_COUNT += 1
             container = client.containers.run(
@@ -80,9 +82,10 @@ def master_watch(data, stat):
             SLAVE_LIST.append(container)
             message = ("running " + str(pid)).encode()
             zk.set("/worker/slave", message)
-            print("created new slave container")
-            zk.set("/worker/slave/" + str(min_pid), b"modified")
-            print("called data watch of slave", str(min_pid))
+            zk.create_async("/worker/slave/" + str(pid), b"running")
+            # print("created new slave container")
+            # zk.set("/worker/slave/" + str(min_pid), b"modified")
+            # print("called data watch of slave", str(min_pid))
             print("exiting data watch of master")
 
 
@@ -158,8 +161,6 @@ def timer_func():
         message = ("running " + str(pid)).encode()
         zk.set("/worker/slave", message)
         zk.create_async("/worker/slave" + str(pid), b"running")
-        # lock = zk.ReadLock("/worker/slave")
-        # lock.acquire()
     while(req_SLAVE_COUNT < SLAVE_COUNT and SLAVE_COUNT > 1):
         SLAVE_COUNT -= 1
         container = SLAVE_LIST.pop()
@@ -403,10 +404,8 @@ if __name__ == '__main__':
     pid = p_client.inspect_container(container.name)['State']['Pid']
     MASTER_LIST.append(container)
     message = ("running " + str(pid)).encode()
-    zk.create("/worker/master", message, makepath=True)
-    zk.create("/worker/master/" + str(pid), b"running")
-    # lock = zk.ReadLock("/worker/master")
-    # lock.acquire()
+    zk.create_async("/worker/master", message, makepath=True)
+    zk.create_async("/worker/master/" + str(pid), b"running")
 
     WORKER_COUNT += 1
     container = client.containers.run(
@@ -419,9 +418,7 @@ if __name__ == '__main__':
     pid = p_client.inspect_container(container.name)['State']['Pid']
     SLAVE_LIST.append(container)
     message = ("running " + str(pid)).encode()
-    zk.create("/worker/slave", message, makepath=True)
-    zk.create("/worker/slave/" + str(pid), b"running")
-    # lock = zk.ReadLock("/worker/slave")
-    # lock.acquire()
+    zk.create_async("/worker/slave", message, makepath=True)
+    zk.create_async("/worker/slave/" + str(pid), b"running")
 
     app.run(host='0.0.0.0', debug=False)

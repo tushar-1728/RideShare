@@ -359,18 +359,18 @@ def create_slave(connection):
     #             change_designation(connection, channel)
 
 
-def change_designation(connection, channel):
-    print("entered designation function")
-    channel.stop_consuming()
-    print("channel closed")
-    print("\n\nDESIGNATION CHANGED TO MASTER\n\n")
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
-    channel_write = connection.channel()
-    channel_write.exchange_declare(exchange='syncQ', exchange_type='fanout')
-    channel_write.queue_declare(queue="writeQ")
-    channel_write.basic_qos(prefetch_count=1)
-    channel_write.basic_consume(queue="writeQ", on_message_callback=on_write_request)
-    channel_write.start_consuming()
+# def change_designation(connection, channel):
+#     print("entered designation function")
+#     channel.stop_consuming()
+#     print("channel closed")
+#     print("\n\nDESIGNATION CHANGED TO MASTER\n\n")
+#     connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
+#     channel_write = connection.channel()
+#     channel_write.exchange_declare(exchange='syncQ', exchange_type='fanout')
+#     channel_write.queue_declare(queue="writeQ")
+#     channel_write.basic_qos(prefetch_count=1)
+#     channel_write.basic_consume(queue="writeQ", on_message_callback=on_write_request)
+#     channel_write.start_consuming()
 
 
 if __name__ == '__main__':
