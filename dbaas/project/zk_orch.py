@@ -73,7 +73,7 @@ def master_watch(data, stat):
             zk.delete_async("/worker/slave/" + str(min_pid))
             zk.create_async("/worker/master/" + str(min_pid), b"running")
 
-            params = {"_id":-1, "data": {"func": "change_designation", "pid": min_pid}}
+            params = {"_id":-1, "data": {"func": "change_designation", "pid": str(min_pid)}}
             params = json.dumps(params).encode()
             write_channel.basic_publish(
                 exchange="syncQ",
