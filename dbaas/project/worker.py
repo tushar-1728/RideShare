@@ -309,6 +309,7 @@ def on_sync_request(ch, method, props, body):
             ch.queue_unbind(PID, exchange='syncQ')
             ch.queue_delete(PID)
             ch.close()
+            print("channel closed")
 
 def create_master(connection):
     global PID
