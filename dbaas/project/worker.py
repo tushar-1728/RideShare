@@ -308,7 +308,7 @@ def on_sync_request(ch, method, props, body):
             ch.queue_unbind(PID, exchange='syncQ')
             ch.queue_delete(PID)
             ch.basic_qos(prefetch_count=0)
-            change_designation(ch)
+            change_designation()
 
 def create_master(connection):
     global PID
@@ -351,7 +351,9 @@ def create_slave(connection):
     channel.start_consuming()
 
 
-def change_designation(channel):
+def change_designation():
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
+    channel = connection.channel() 
     channel.exchange_declare(exchange='syncQ', exchange_type='fanout')
     channel.queue_declare(queue="writeQ")
     channel.basic_consume(queue="writeQ", on_message_callback=on_write_request)
