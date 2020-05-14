@@ -67,7 +67,7 @@ def master_watch(data, stat):
                 pid_list.append(pid)
             min_pid = min(pid_list)
             min_pid_index = pid_list.index(min_pid)
-            conatainer = SLAVE_LIST.pop(min_pid_index)
+            container = SLAVE_LIST.pop(min_pid_index)
             MASTER_LIST.append(container)
 
             zk.delete_async("/worker/slave/" + str(min_pid))
