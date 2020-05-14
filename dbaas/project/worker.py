@@ -301,10 +301,14 @@ def on_sync_request(ch, method, props, body):
             print("entry:")
             print(decoded_body)
     elif(func_name == "change_designation"):
-        print("entered change desgnation")
         if(data["pid"] == PID):
-            print("pid match found")
-
+            ch.stop_consuming()
+            consumers = ch.consumer_tags()
+            for i in consumers:
+                ch.basic_cancel(i)
+            ch.queue_unbind(PID, exchange='syncQ')
+            ch.queue_delete(PID)
+            ch.close()
 
 def create_master(connection):
     global PID
@@ -329,15 +333,14 @@ def create_slave(connection):
     PID = data.decode().split()[1]
 
     db_init()
-    channel = connection.channel()
+    channel = connection.channel() 
     channel.queue_declare(queue='readQ')
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(queue='readQ', on_message_callback=on_read_request)
 
-    result = channel.queue_declare(queue='', exclusive=True)
-    queue_name = result.method.queue
-    channel.queue_bind(exchange='syncQ', queue=queue_name)
-    channel.basic_consume(queue=queue_name, on_message_callback=on_sync_request, auto_ack=True)
+    channel.queue_declare(queue=PID, exclusive=True)
+    channel.queue_bind(exchange='syncQ', queue=PID)
+    channel.basic_consume(queue=PID, on_message_callback=on_sync_request, auto_ack=True)
 
     print("sync command sent ")
     channel.basic_publish(
