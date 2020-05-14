@@ -56,7 +56,6 @@ def master_watch(data, stat):
     if(data):
         data = data.decode()
         if(data == "deleted"):
-            print("entered data watch of master")
             global SLAVE_LIST
             global MASTER_LIST
             global WORKER_COUNT
@@ -81,7 +80,6 @@ def master_watch(data, stat):
                 routing_key="",
                 body=params
             )
-            print("exiting data watch of master")
 
 
 class RpcClient(object):
@@ -165,8 +163,8 @@ def timer_func():
         zk.delete_async("/worker/slave/" + str(pid))
 
     REQUEST_COUNT = 0
-    print("\n\nTIMER RESTARTED\n\n")
-    timer = threading.Timer(1.5 * 60, timer_func)
+    print("\n\ntimer restarted\n\n")
+    timer = threading.Timer(2 * 60, timer_func)
     timer.start()
 
 
@@ -180,8 +178,8 @@ def db_read():
 
     if(TIMER_START_FLAG == 0):
         TIMER_START_FLAG = 1
-        timer = threading.Timer(1.5 * 60, timer_func)
-        print("timer func started")
+        timer = threading.Timer(2 * 60, timer_func)
+        print("\n\ntimer func started\n\n")
         timer.start()
 
     # rides-start
@@ -357,7 +355,6 @@ def crash_slave():
     container.remove()
     zk.delete("/worker/slave/" + str(max_pid))
     zk.set("/worker/slave", b"deleted")
-    print("slave znode deleted")
     return make_response(str(max_pid), 200)
 
 
@@ -368,9 +365,7 @@ def crash_master():
     pid = p_client.inspect_container(container.name)['State']['Pid']
     container.stop(timeout=0)
     container.remove()
-    print("master container deleted")
     zk.delete("/worker/master/" + str(pid))
-    print("master znode deleted")
     zk.set("/worker/master", b"deleted")
     return make_response(str(pid), 200)
 
