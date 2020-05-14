@@ -307,8 +307,8 @@ def on_sync_request(ch, method, props, body):
                 ch.basic_cancel(i)
             ch.queue_unbind(PID, exchange='syncQ')
             ch.queue_delete(PID)
-            ch.close()
-            print("channel closed")
+            ch.basic_qos(prefetch_count=0)
+            change_designation(ch)
 
 def create_master(connection):
     global PID
@@ -350,32 +350,13 @@ def create_slave(connection):
     )
     channel.start_consuming()
 
-    # @zk.DataWatch(path)
-    # def slave_watch(data, stat):
-    #     print("entered data watch of slave")
-    #     if(data):
-    #         data = data.decode()
-    #         if data == "modified":
-    #             zk.delete(path)
-    #             print("deleted slave znode")
-    #             pid = path.split("/")[3]
-    #             zk.create("/worker/master/" + pid, b"running")
-    #             print("created worker znode")
-    #             change_designation(connection, channel)
 
-
-# def change_designation(connection, channel):
-#     print("entered designation function")
-#     channel.stop_consuming()
-#     print("channel closed")
-#     print("\n\nDESIGNATION CHANGED TO MASTER\n\n")
-#     connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
-#     channel_write = connection.channel()
-#     channel_write.exchange_declare(exchange='syncQ', exchange_type='fanout')
-#     channel_write.queue_declare(queue="writeQ")
-#     channel_write.basic_qos(prefetch_count=1)
-#     channel_write.basic_consume(queue="writeQ", on_message_callback=on_write_request)
-#     channel_write.start_consuming()
+def change_designation(channel):
+    channel.exchange_declare(exchange='syncQ', exchange_type='fanout')
+    channel.queue_declare(queue="writeQ")
+    channel.basic_consume(queue="writeQ", on_message_callback=on_write_request)
+    print("designation changed")
+    channel.start_consuming()
 
 
 if __name__ == '__main__':
