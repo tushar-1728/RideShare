@@ -67,7 +67,7 @@ def master_watch(data, stat):
             min_pid = min(pid_list)
             min_pid_index = pid_list.index(min_pid)
             container = SLAVE_LIST.pop(min_pid_index)
-            container.exec_run("pkill python", detach=True)
+            container.exec_run("pkill python3", detach=True)
             container.exec_run("python3 worker.py 1", detach=True)
             MASTER_LIST.append(container)
             WORKER_COUNT += 1
