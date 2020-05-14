@@ -309,7 +309,6 @@ def create_master(connection):
     data = zk.get("/worker/master")[0]
     PID = data.decode().split()[1]
     path = "/worker/master/" + PID
-    # zk.create(path, b"running")
 
     db_init()
     channel = connection.channel()
@@ -324,12 +323,8 @@ def create_slave(connection):
     print("slave mode")
 
     data = zk.get("/worker/slave")[0]
-    # lock = zk.ReadLock("/worker/slave")
-    # lock.release()
-    # zk.set("/worker/slave", b"")
     PID = data.decode().split()[1]
     path = "/worker/slave/" + PID
-    # zk.create(path, b"running")
 
     db_init()
     channel = connection.channel()
@@ -348,21 +343,20 @@ def create_slave(connection):
         routing_key="writeQ",
         body=json.dumps({"func": "sync_command"}).encode()
     )
-    t1 = threading.Thread(target=channel.start_consuming)
-    t1.start()
+    channel.start_consuming()
 
-    @zk.DataWatch(path)
-    def slave_watch(data, stat):
-        print("entered data watch of slave")
-        if(data):
-            data = data.decode()
-            if data == "modified":
-                zk.delete(path)
-                print("deleted slave znode")
-                pid = path.split("/")[3]
-                zk.create("/worker/master/" + pid, b"running")
-                print("created worker znode")
-                change_designation(connection, channel)
+    # @zk.DataWatch(path)
+    # def slave_watch(data, stat):
+    #     print("entered data watch of slave")
+    #     if(data):
+    #         data = data.decode()
+    #         if data == "modified":
+    #             zk.delete(path)
+    #             print("deleted slave znode")
+    #             pid = path.split("/")[3]
+    #             zk.create("/worker/master/" + pid, b"running")
+    #             print("created worker znode")
+    #             change_designation(connection, channel)
 
 
 def change_designation(connection, channel):
