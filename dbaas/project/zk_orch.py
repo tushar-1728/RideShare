@@ -68,7 +68,11 @@ def master_watch(data, stat):
             min_pid_index = pid_list.index(min_pid)
             container = SLAVE_LIST.pop(min_pid_index)
             container.exec_run("pkill python3", detach=True)
+            print("python3 process killed")
             container.exec_run("python3 worker.py 1", detach=True)
+            print("python3 process started as master")
+            zk.delete_async("/worker/slave/" + str(min_pid))
+            zk.create_async("/worker/master/" + str(min_pid), b"running")
             MASTER_LIST.append(container)
             WORKER_COUNT += 1
             container = client.containers.run(
