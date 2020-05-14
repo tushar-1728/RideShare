@@ -154,8 +154,8 @@ def timer_func():
         pid = p_client.inspect_container(container.name)['State']['Pid']
         message = ("running " + str(pid)).encode()
         zk.set("/worker/slave", message)
-        lock = zk.ReadLock("/worker/slave")
-        lock.acquire()
+        # lock = zk.ReadLock("/worker/slave")
+        # lock.acquire()
     while(req_SLAVE_COUNT < SLAVE_COUNT and SLAVE_COUNT > 1):
         SLAVE_COUNT -= 1
         container = SLAVE_LIST.pop()
@@ -400,8 +400,8 @@ if __name__ == '__main__':
     MASTER_LIST.append(container)
     message = ("running " + str(pid)).encode()
     zk.create("/worker/master", message, makepath=True)
-    lock = zk.ReadLock("/worker/master")
-    lock.acquire()
+    # lock = zk.ReadLock("/worker/master")
+    # lock.acquire()
 
     WORKER_COUNT += 1
     container = client.containers.run(
@@ -415,7 +415,7 @@ if __name__ == '__main__':
     SLAVE_LIST.append(container)
     message = ("running " + str(pid)).encode()
     zk.create("/worker/slave", message, makepath=True)
-    lock = zk.ReadLock("/worker/slave")
-    lock.acquire()
+    # lock = zk.ReadLock("/worker/slave")
+    # lock.acquire()
 
     app.run(host='0.0.0.0', debug=False)
