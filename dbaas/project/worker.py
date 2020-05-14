@@ -303,8 +303,7 @@ def on_sync_request(ch, method, props, body):
     elif(func_name == "change_designation"):
         if(data["pid"] == PID):
             ch.stop_consuming()
-            consumers = ch.consumer_tags()
-            for i in consumers:
+            for i in ch.consumer_tags:
                 ch.basic_cancel(i)
             ch.queue_unbind(PID, exchange='syncQ')
             ch.queue_delete(PID)
