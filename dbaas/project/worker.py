@@ -302,7 +302,7 @@ def on_sync_request(ch, method, props, body):
             print(decoded_body)
     elif(func_name == "change_designation"):
         print("entered change desgnation")
-        if(data["pid"] == PID):
+        if(data["pid"] == str(PID)):
             print("pid match found")
 
 
