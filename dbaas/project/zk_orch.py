@@ -6,6 +6,7 @@ from flask import Flask, request, make_response
 import pika
 import docker
 from kazoo.client import KazooClient
+from math import ceil
 
 app = Flask(__name__)
 
@@ -139,7 +140,9 @@ def timer_func():
     global SLAVE_COUNT
     global SLAVE_LIST
     global WORKER_COUNT
-    req_SLAVE_COUNT = REQUEST_COUNT / 20
+    req_SLAVE_COUNT = ceil(REQUEST_COUNT / 20)
+    print("request count:", REQUEST_COUNT)
+    print("required slave count:", req_SLAVE_COUNT)
     while(req_SLAVE_COUNT > SLAVE_COUNT):
         SLAVE_COUNT += 1
         WORKER_COUNT += 1
@@ -154,7 +157,7 @@ def timer_func():
         pid = p_client.inspect_container(container.name)['State']['Pid']
         message = ("running " + str(pid)).encode()
         zk.set("/worker/slave", message)
-        zk.create("/worker/slave" + str(pid), b"running")
+        zk.create_async("/worker/slave" + str(pid), b"running")
         # lock = zk.ReadLock("/worker/slave")
         # lock.acquire()
     while(req_SLAVE_COUNT < SLAVE_COUNT and SLAVE_COUNT > 1):
@@ -163,7 +166,7 @@ def timer_func():
         pid = p_client.inspect_container(container.name)['State']['Pid']
         container.stop(timeout=0)
         container.remove()
-        zk.delete("/worker/slave/" + str(pid))
+        zk.delete_async("/worker/slave/" + str(pid))
 
     REQUEST_COUNT = 0
     print("\n\nTIMER RESTARTED\n\n")
@@ -388,8 +391,8 @@ if __name__ == '__main__':
 
     MASTER_COUNT += 1
     SLAVE_COUNT += 1
-    WORKER_COUNT += 1
 
+    WORKER_COUNT += 1
     container = client.containers.run(
         "workers:latest",
         detach=True,
