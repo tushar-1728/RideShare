@@ -60,18 +60,27 @@ def master_watch(data, stat):
             global SLAVE_LIST
             global MASTER_LIST
             global WORKER_COUNT
+
             pid_list = []
             for i in SLAVE_LIST:
                 pid = p_client.inspect_container(i.name)['State']['Pid']
                 pid_list.append(pid)
             min_pid = min(pid_list)
             min_pid_index = pid_list.index(min_pid)
-            container = SLAVE_LIST.pop(min_pid_index)
-            print("python3 process killed")
-            print("python3 process started as master")
+            conatainer = SLAVE_LIST.pop(min_pid_index)
+            MASTER_LIST.append(container)
+
             zk.delete_async("/worker/slave/" + str(min_pid))
             zk.create_async("/worker/master/" + str(min_pid), b"running")
-            MASTER_LIST.append(container)
+
+            params = {"_id":-1, "data": {"func_name": "change_designation", "pid": min_pid}}
+            params = json.dumps(params).encode()
+            write_channel.basic_publish(
+                exchange="syncQ",
+                routing_key="",
+                body=params
+            )
+
             WORKER_COUNT += 1
             container = client.containers.run(
                 "workers:latest",
@@ -85,9 +94,6 @@ def master_watch(data, stat):
             message = ("running " + str(pid)).encode()
             zk.set("/worker/slave", message)
             zk.create_async("/worker/slave/" + str(pid), b"running")
-            # print("created new slave container")
-            # zk.set("/worker/slave/" + str(min_pid), b"modified")
-            # print("called data watch of slave", str(min_pid))
             print("exiting data watch of master")
 
 

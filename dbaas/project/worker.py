@@ -300,6 +300,10 @@ def on_sync_request(ch, method, props, body):
             print(sys.stderr)
             print("entry:")
             print(decoded_body)
+    elif(func_name == "change_designation"):
+        print("entered change desgnation")
+        if(data["pid"] == PID):
+            print("pid match found")
 
 
 def create_master(connection):
