@@ -308,7 +308,7 @@ def create_master(connection):
 
     data = zk.get("/worker/master")[0]
     lock = zk.ReadLock("/worker/master")
-    lock.release()
+    # lock.release()
     zk.set("/worker/master", b"")
     PID = data.decode().split()[1]
     path = "/worker/master/" + PID
@@ -328,7 +328,7 @@ def create_slave(connection):
 
     data = zk.get("/worker/slave")[0]
     lock = zk.ReadLock("/worker/slave")
-    lock.release()
+    # lock.release()
     zk.set("/worker/slave", b"")
     PID = data.decode().split()[1]
     path = "/worker/slave/" + PID
