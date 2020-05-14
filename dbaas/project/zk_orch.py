@@ -404,8 +404,8 @@ if __name__ == '__main__':
     pid = p_client.inspect_container(container.name)['State']['Pid']
     MASTER_LIST.append(container)
     message = ("running " + str(pid)).encode()
-    zk.create_async("/worker/master", message, makepath=True)
-    zk.create_async("/worker/master/" + str(pid), b"running")
+    zk.create("/worker/master", message, makepath=True)
+    zk.create("/worker/master/" + str(pid), b"running")
 
     WORKER_COUNT += 1
     container = client.containers.run(
