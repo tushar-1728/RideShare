@@ -1,0 +1,7 @@
+FROM python:project
+
+ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE 1
+RUN mkdir -p /code
+COPY . /code
+WORKDIR /code

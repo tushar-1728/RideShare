@@ -1,0 +1,13 @@
+version: '3.5'
+
+services:
+  users_web:
+    build: .
+    image: users:latest
+    container_name: users_container
+    command: python server.py
+    restart: always
+    environment:
+      - TEAM_NAME=CC_0113_0221_0913_1125
+    ports:
+      - "80:5000"
