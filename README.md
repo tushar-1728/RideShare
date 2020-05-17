@@ -125,14 +125,14 @@ queues.<br/>
 ● From the users/rides container, you will now be calling the db read/write APIs on the
 DBaaS Vm instead of localhost.<br/>
 ● You will also have to implement an API ‘api/v1/crash/master’ called over POST method<br/>
->>o When this API is called the orchestrator will kill the master worker.<br/>
+o When this API is called the orchestrator will kill the master worker.<br/>
 ● Another API ‘api/v1/crash/slave’ also has to be implemented called over POST method
->>o When this API is called, the slave whose container’s pid is the highest has to be
+o When this API is called, the slave whose container’s pid is the highest has to be
 killed.<br/>
 ● Another API ‘api/v1/worker/list’, over a GET method has to be implemented.
->>o The response of this API should be the sorted list of pid’s of the container’s of all
+o The response of this API should be the sorted list of pid’s of the container’s of all
 the workers.<br/>
->>o Eg, [ 1000, 2112, 4330 ]<br/><br/>
+o Eg, [ 1000, 2112, 4330 ]<br/><br/>
 **Hints**<br/>
 ● Both the master and slave must run the same code, as any slave can be elected as the
 master.<br/>
@@ -144,10 +144,10 @@ relevant queues and not write to db themselves<br/>
 ● Crash APIs should return 200 OK with message body as​ ​[ "pid_of_container_killed" ]<br/>
 ● For syncing a new slave with all the data, you can use multiple techniques, a few of
 them could be<br/>
->>o Making the message “durable” so they are not removed from the queue<br/>
->>o Not sending “ack” from the consumers so the messages stay in the queue, so
+o Making the message “durable” so they are not removed from the queue<br/>
+o Not sending “ack” from the consumers so the messages stay in the queue, so
 when a new slave joins becomes a consumer, they can get all the messages.
->>o Or any other algorithm you find appropriate.<br/>
+o Or any other algorithm you find appropriate.<br/>
 ● Other than the given 4 queues, you can use any number of temporary queues at your
 discretion.<br/><br/>
 **Other points**<br/>
