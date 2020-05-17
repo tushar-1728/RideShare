@@ -105,3 +105,26 @@ While testing we encountered 204 No Content error, even when there existed a rid
 - Creating a separate database for each worker, we overcame this by installing mongoDB in the workers image itself.
 - Scaling up and down as the respective znodes were not created, we overcame this by creating znodes asynchronously.
 - Converting slave to master was a big challenge as pika is not thread-safe, so we converted a slave to master by sending a message on syncQ containing the PID of the slave. When a slave with the same PID receives this message, it calls change\_designation function which converts it from slave to master.
+
+# Setup
+## CREATING USERS AND RIDES CONTAINER
+
+>>1: Goto folder user-ride
+
+>>2: Create image python:pip using Dockerfile in that folder
+
+>>3: Goto folder user inside user-ride folder, run users container using docker-compose file
+
+>>4: Goto folder ride inside user-ride folder, run rides container using docker-compose file
+
+## CREATING DBASS CONTAINER
+
+>>0: Goto dbaas folder
+
+>>1: Goto orch-docker folder, create python:project image using Dockerfile in that folder
+
+>>2: Goto work-docker folder, create python:worker image using Dockerfile in that folder
+
+>>3: Now goto project folder, create worker:latest image using Dockerfile_worker in that folder
+
+>>4: Run the dbaas container using docker-compose file in project folder
