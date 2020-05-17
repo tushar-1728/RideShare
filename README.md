@@ -21,7 +21,7 @@ CREATING DBASS CONTAINER
 
 >>4: Run the dbaas container using docker-compose file in project folder
 
-# Project Configuration
+# Project Specification
 # Final Project: Mini DBaaS for Rideshare
 ## 17CS352 - Cloud Computing, PES University
 
