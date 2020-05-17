@@ -13,19 +13,28 @@ app = Flask(__name__)
 connection = pika.BlockingConnection(
     pika.ConnectionParameters(host='rmq', heartbeat=0)
 )
-write_channel = connection.channel()
-result = write_channel.queue_declare(queue='writeQ')
+channel = connection.channel()
+channel.queue_declare(queue='writeQ')
 
 logging.basicConfig()
 zk = KazooClient(hosts='zoo:2181')
 zk.start()
 
+# flag denoting whether the timer has started or no
 TIMER_START_FLAG = 0
+# variable which stores the count of all read requests made
+# gets incremented after each read request is received
 REQUEST_COUNT = 0
-MASTER_COUNT = 0
+# variable just used for naming the worker containers distinctly
+# incremented before creating every new worker
 WORKER_COUNT = 0
+# variable keeps count of all the masters running currently, for our case it is always 1
+MASTER_COUNT = 0
+# variable keeps count of all the slaves running currently
 SLAVE_COUNT = 0
+# list storing all the slave containers
 SLAVE_LIST = []
+# list storing all the master containers
 MASTER_LIST = []
 
 
@@ -75,7 +84,7 @@ def master_watch(data, stat):
 
             params = {"_id":-1, "data": {"func": "change_designation", "pid": str(min_pid)}}
             params = json.dumps(params).encode()
-            write_channel.basic_publish(
+            channel.basic_publish(
                 exchange="syncQ",
                 routing_key="",
                 body=params
@@ -124,7 +133,7 @@ rpc_client = RpcClient()
 
 
 def write_call(params):
-    write_channel.basic_publish(
+    channel.basic_publish(
         exchange="",
         routing_key="writeQ",
         body=params
@@ -174,15 +183,20 @@ def db_read():
     global REQUEST_COUNT
     global TIMER_START_FLAG
 
+    # read request count gets incremented by 1 after every read request received
     REQUEST_COUNT += 1
 
     if(TIMER_START_FLAG == 0):
+        # flag set to 1 denoting timer has started
         TIMER_START_FLAG = 1
+        # timer is set to 2 mins and after that timer_func is called
         timer = threading.Timer(2 * 60, timer_func)
         print("\n\ntimer func started\n\n")
+        # starts the timer
         timer.start()
 
-    # rides-start
+    # the origin argument in the request body denotes which microservice called the db read api
+    # if condition segregating all db read apis coming from Rides microservice
     if request.args.get('ORIGIN') == "RIDE":
         if request.args.get('COMMAND') == "Upcoming":
             source = request.args.get('source')
@@ -215,6 +229,7 @@ def db_read():
             message = rpc_client.read_call("read_ride_count:").decode()
             return message, 200
 
+    # if condition segregating all db read apis coming from Users microservice
     elif request.args.get('ORIGIN') == "USER":
         if request.args.get('COMMAND') == "EXISTS":
             collection_name = request.args.get("DB")
@@ -374,8 +389,6 @@ if __name__ == '__main__':
     client = docker.DockerClient(base_url='unix://var/run/docker.sock')
     p_client = docker.APIClient(base_url='unix://var/run/docker.sock')
 
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
-    channel = connection.channel()
     channel.exchange_declare(exchange='syncQ', exchange_type='fanout')
     channel.queue_declare(queue="writeQ")
     channel.queue_declare(queue='readQ')

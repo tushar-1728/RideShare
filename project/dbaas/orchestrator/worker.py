@@ -309,6 +309,15 @@ def on_sync_request(ch, method, props, body):
             ch.queue_delete(PID)
             ch.basic_qos(prefetch_count=0)
             change_designation()
+    elif(func_name == "stop_consuming"):
+        if(data["pid"] == PID):
+            ch.stop_consuming()
+            for i in ch.consumer_tags:
+                ch.basic_cancel(i)
+            ch.queue_unbind(PID, exchange='syncQ')
+            ch.queue_delete(PID)
+            ch.basic_qos(prefetch_count=0)
+            ch.close()
 
 def create_master(connection):
     global PID
