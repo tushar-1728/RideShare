@@ -167,8 +167,14 @@ def timer_func():
         SLAVE_COUNT -= 1
         container = SLAVE_LIST.pop()
         pid = p_client.inspect_container(container.name)['State']['Pid']
-        container.stop(timeout=0)
-        container.remove()
+        params = {"_id":-1, "data": {"func": "stop_consuming", "pid": str(pid)}}
+        params = json.dumps(params).encode()
+        channel.basic_publish(
+            exchange="syncQ",
+            routing_key="",
+            body=params
+        )
+        container.stop()
         zk.delete_async("/worker/slave/" + str(pid))
 
     REQUEST_COUNT = 0
@@ -373,6 +379,7 @@ def crash_slave():
         routing_key="",
         body=params
     )
+    container.stop()
     zk.delete("/worker/slave/" + str(max_pid))
     zk.set("/worker/slave", b"deleted")
     return make_response(str(max_pid), 200)
