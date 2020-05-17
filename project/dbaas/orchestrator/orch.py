@@ -366,7 +366,14 @@ def crash_slave():
     max_pid = max(pid_list)
     max_pid_index = pid_list.index(max_pid)
     container = SLAVE_LIST.pop(max_pid_index)
-    container.stop(timeout=0)
+    container.stop(timeout=10)
+    params = {"_id":-1, "data": {"func": "stop_consuming", "pid": str(max_pid)}}
+    params = json.dumps(params).encode()
+    channel.basic_publish(
+        exchange="syncQ",
+        routing_key="",
+        body=params
+    )
     container.remove()
     zk.delete("/worker/slave/" + str(max_pid))
     zk.set("/worker/slave", b"deleted")
@@ -386,6 +393,7 @@ def crash_master():
 
 
 if __name__ == '__main__':
+    # 
     client = docker.DockerClient(base_url='unix://var/run/docker.sock')
     p_client = docker.APIClient(base_url='unix://var/run/docker.sock')
 
