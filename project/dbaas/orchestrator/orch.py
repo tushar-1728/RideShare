@@ -365,8 +365,7 @@ def crash_slave():
         pid_list.append(p_client.inspect_container(i.name)['State']['Pid'])
     max_pid = max(pid_list)
     max_pid_index = pid_list.index(max_pid)
-    container = SLAVE_LIST.pop(max_pid_index)
-    # container.stop(timeout=10)
+    SLAVE_LIST.pop(max_pid_index)
     params = {"_id":-1, "data": {"func": "stop_consuming", "pid": str(max_pid)}}
     params = json.dumps(params).encode()
     channel.basic_publish(
@@ -374,7 +373,6 @@ def crash_slave():
         routing_key="",
         body=params
     )
-    # container.remove()
     zk.delete("/worker/slave/" + str(max_pid))
     zk.set("/worker/slave", b"deleted")
     return make_response(str(max_pid), 200)
@@ -385,8 +383,11 @@ def crash_slave():
 def crash_master():
     container = MASTER_LIST.pop()
     pid = p_client.inspect_container(container.name)['State']['Pid']
-    container.stop(timeout=0)
-    container.remove()
+    params = {"func": "stop_consuming"}
+    params = json.dumps(params).encode()
+    write_call(params)
+    # container.stop(timeout=0)
+    # container.remove()
     zk.delete("/worker/master/" + str(pid))
     zk.set("/worker/master", b"deleted")
     return make_response(str(pid), 200)

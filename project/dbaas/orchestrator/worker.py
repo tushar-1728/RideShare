@@ -252,6 +252,7 @@ def on_write_request(ch, method, props, body):
             routing_key='',
             body=sync_data
         )
+        ch.basic_ack(delivery_tag=method.delivery_tag)
     elif(func_name == "sync_command"):
         collection = dbState("syncQ")
         commands = collection.find({"_id": {"$gte": 0}})
@@ -263,7 +264,14 @@ def on_write_request(ch, method, props, body):
                 body=i
             )
         print("done serving sync command")
-    ch.basic_ack(delivery_tag=method.delivery_tag)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+    elif(func_name == "stop_consuming"):
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+        ch.stop_consuming()
+        for i in ch.consumer_tags:
+            ch.basic_cancel(i)
+        ch.close()
+        connection.close()
 
 
 def on_sync_request(ch, method, props, body):
@@ -318,7 +326,6 @@ def on_sync_request(ch, method, props, body):
                 ch.basic_cancel(i)
             ch.queue_unbind(PID, exchange='syncQ')
             ch.queue_delete(PID)
-            ch.basic_qos(prefetch_count=0)
             ch.close()
             connection.close()
 
@@ -349,7 +356,7 @@ def create_slave(connection):
     channel.queue_declare(queue='readQ')
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(queue='readQ', on_message_callback=on_read_request)
-    
+
     channel.queue_declare(queue=PID, exclusive=True)
     channel.queue_bind(exchange='syncQ', queue=PID)
     channel.basic_consume(queue=PID, on_message_callback=on_sync_request, auto_ack=True)
