@@ -266,6 +266,7 @@ def on_write_request(ch, method, props, body):
         print("done serving sync command")
         ch.basic_ack(delivery_tag=method.delivery_tag)
     elif(func_name == "stop_consuming"):
+        print("entered stop consuming of worker")
         ch.basic_ack(delivery_tag=method.delivery_tag)
         ch.stop_consuming()
         for i in ch.consumer_tags:
