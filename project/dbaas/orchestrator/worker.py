@@ -305,8 +305,8 @@ def on_sync_request(ch, method, props, body):
             ch.stop_consuming()
             for i in ch.consumer_tags:
                 ch.basic_cancel(i)
-            ch.queue_unbind(PID, exchange='syncQ')
-            ch.queue_delete(PID)
+            # ch.queue_unbind(PID, exchange='syncQ')
+            # ch.queue_delete(PID)
             ch.basic_qos(prefetch_count=0)
             change_designation()
     elif(func_name == "stop_consuming"):
@@ -347,9 +347,13 @@ def create_slave(connection):
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(queue='readQ', on_message_callback=on_read_request)
 
-    channel.queue_declare(queue=PID, exclusive=True)
-    channel.queue_bind(exchange='syncQ', queue=PID)
-    channel.basic_consume(queue=PID, on_message_callback=on_sync_request, auto_ack=True)
+    result = channel.queue_declare(queue='', exclusive=True)
+    queue_name = result.method.queue
+    channel.queue_bind(exchange='syncQ', queue=queue_name)
+    channel.basic_consume(queue=queue_name, on_message_callback=on_sync_request, auto_ack=True)
+    # channel.queue_declare(queue=PID, exclusive=True)
+    # channel.queue_bind(exchange='syncQ', queue=PID)
+    # channel.basic_consume(queue=PID, on_message_callback=on_sync_request, auto_ack=True)
 
     print("sync command sent ")
     channel.basic_publish(
