@@ -21,7 +21,7 @@ CREATING DBASS CONTAINER
 
 >>3: Now goto orchestrator folder, create worker:latest image using Dockerfile_worker in that folder
 
->>4: Run the dbaas container using docker-compose file in project folder
+>>4: Run the dbaas container using docker-compose file in orchestrator folder
 
 # Project Specification
 # Final Project: Mini DBaaS for Rideshare
