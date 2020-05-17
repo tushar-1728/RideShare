@@ -2,6 +2,7 @@
 CREATING USERS AND RIDES CONTAINER
 
 1: Goto folder user-ride
+
 2: Create image python:pip using Dockerfile in that folder
 3: Goto folder user inside user-ride folder, run users container using docker-compose file
 4: Goto folder ride inside user-ride folder, run rides container using docker-compose file
