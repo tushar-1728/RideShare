@@ -41,7 +41,7 @@ requests from users and rides microservices and perform the database read and wr
 according to the given specifications.
 
 
-**Architecture of DBaas:**
+**Architecture of DBaas:**<br/>
 ● The orchestrator will listen to incoming requests on port 80.<br/>
 ● You will be using AMQP(Advanced Message Queue Protocol) using RabbitMQ as a
 message broker for this assignment.<br/>
@@ -91,7 +91,7 @@ upon that, a new slave node will be brought up by the orchestrator.<br/><br/>
 official existing “Zookeeper” docker image from dockerhub.<br/>
 ● Even for rabbitMQ, use the existing image.<br/>
 ● The orchestrator will expose the API endpoints ‘api/v1/db/write’ and ‘api/v1/db/read’<br/><br/>
-**High Availability:**
+**High Availability:**<br/>
 Zookeeper will be used to “watch” on each worker.
 If a master fails:<br/><br/>
 ● A new master is elected amongst the existing slaves. The slave whose container has the
@@ -101,7 +101,7 @@ worker.<br/>
 If a slave worker fails:<br/>
 ● A new slave worker is started.<br/>
 ● All the data is copied to the new slave. asynchronously<br/><br/>
-**Scalability:**
+**Scalability:**<br/>
 The orchestrator has to keep a count of all the incoming HTTP requests for the db read APIs. For
 now we will assume that most requests are read requests and hence the master worker does
 not need scaling out.<br/>
@@ -117,7 +117,7 @@ For auto-scaling count only db read APIs.<br/><br/>
 And so on.
 <br/><br/>
 
-**Orchestrator:**
+**Orchestrator:**<br/>
 ● The orchestrator will be a flask application.<br/>
 ● The orchestrator will be serving the endpoints ‘api/v1/db/read’ and ‘api/v1/db/write’.<br/>
 ● Upon receiving a call to these APIs it will write relevant messages to the relevant
@@ -133,7 +133,7 @@ killed.<br/>
 o The response of this API should be the sorted list of pid’s of the container’s of all
 the workers.<br/>
 o Eg, [ 1000, 2112, 4330 ]<br/><br/>
-**Hints**
+**Hints**<br/>
 ● Both the master and slave must run the same code, as any slave can be elected as the
 master.<br/>
 ● Use docker sdk to start and stop new containers programmatically<br/>
@@ -150,7 +150,7 @@ when a new slave joins becomes a consumer, they can get all the messages.
 o Or any other algorithm you find appropriate.<br/>
 ● Other than the given 4 queues, you can use any number of temporary queues at your
 discretion.<br/><br/>
-**Other points**
+**Other points**<br/>
 You must keep the AWS setup that you created in your last assignment still running. The Users
 container must still be running on the Users EC2 instance, and the AWS Application Load
 Balancer must still perform the path-based load balancing before requests are ever received by
@@ -159,7 +159,7 @@ the db container orchestrator.<br/>
 
 The read write db requests from users/rides container will no longer go the ‘api/v1/db/read’
 API running on the localhost, but instead must go to the public IP of the DBaaS VM.<br/><br/>
-**● The rabbitMQ tutorial is a great place to start.**
+**● The rabbitMQ tutorial is a great place to start.**<br/>
 ● Hello World, Worker Queues, RPC, Pub-Sub are few examples you must look at in the<br/>
 RabbitMQ tutorial, as you’ll be using those techniques in this project.<br/>
 ● Initially you will start with 1 slave and 1 master worker.<br/>
@@ -170,8 +170,8 @@ pulled from dockerhub.<br/>
 accordingly.<br/>
 ● Ideally you must be using “docker-compose” to orchestrate your containers.<br/>
 ● For the project you will need to know a little more about the intricate ​details of AMQP
-like, queues, exchanges, channels, brokers​ etc.<br/>
-**References:**
+like, queues, exchanges, channels, brokers​ etc.<br/><br/>
+**References:**<br/>
 Zookeeper: ​http://zookeeper.apache.org/<br/>
 Zookeeper:​https://www.allprogrammingtutorials.com/tutorials/leader-election-using-apache-zookeeper.php
 RabbitMQ: ​https://www.rabbitmq.com/getstarted.html​ **(Please go through tutorial 1, 2,3 and 6 and try
