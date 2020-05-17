@@ -14,6 +14,7 @@ zk.start()
 
 
 PID = ""
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
 
 
 def dbState(collection_name):
@@ -308,7 +309,7 @@ def on_sync_request(ch, method, props, body):
             ch.queue_unbind(PID, exchange='syncQ')
             ch.queue_delete(PID)
             ch.basic_qos(prefetch_count=0)
-            change_designation()
+            change_designation(ch, connection)
     elif(func_name == "stop_consuming"):
         if(data["pid"] == PID):
             print("pid match found in stop consuming")
@@ -319,6 +320,7 @@ def on_sync_request(ch, method, props, body):
             ch.queue_delete(PID)
             ch.basic_qos(prefetch_count=0)
             ch.close()
+            connection.close()
 
 def create_master(connection):
     global PID
@@ -347,11 +349,7 @@ def create_slave(connection):
     channel.queue_declare(queue='readQ')
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(queue='readQ', on_message_callback=on_read_request)
-
-    # result = channel.queue_declare(queue='', exclusive=True)
-    # queue_name = result.method.queue
-    # channel.queue_bind(exchange='syncQ', queue=queue_name)
-    # channel.basic_consume(queue=queue_name, on_message_callback=on_sync_request, auto_ack=True)
+    
     channel.queue_declare(queue=PID, exclusive=True)
     channel.queue_bind(exchange='syncQ', queue=PID)
     channel.basic_consume(queue=PID, on_message_callback=on_sync_request, auto_ack=True)
@@ -365,7 +363,9 @@ def create_slave(connection):
     channel.start_consuming()
 
 
-def change_designation():
+def change_designation(channel, connection):
+    channel.close()
+    connection.close()
     connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
     channel = connection.channel() 
     channel.exchange_declare(exchange='syncQ', exchange_type='fanout')
@@ -377,7 +377,6 @@ def change_designation():
 
 if __name__ == '__main__':
     designation = int(sys.argv[1])
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rmq', heartbeat=0))
     print("Ready for receiving requests.")
     if(designation == 1):
         create_master(connection)
