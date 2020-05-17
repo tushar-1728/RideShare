@@ -221,7 +221,28 @@ def on_write_request(ch, method, props, body):
     func_name = decoded_body["func"]
     print("Write request received for " + func_name)
 
-    if(func_name != "sync_command"):
+    if(func_name == "sync_command"):
+        collection = dbState("syncQ")
+        commands = collection.find({"_id": {"$gte": 0}})
+        for i in commands:
+            i = json.dumps(i).encode()
+            ch.basic_publish(
+                exchange="syncQ",
+                routing_key="",
+                body=i
+            )
+        print("done serving sync command")
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+    elif(func_name == "stop_consuming"):
+        print("entered stop consuming of worker")
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+        print("ack sent")
+        ch.stop_consuming()
+        for i in ch.consumer_tags:
+            ch.basic_cancel(i)
+        ch.close()
+        connection.close()
+    else:
         collection = dbState("syncQ")
         collection.update_one({"_id": "last_id"}, {"$inc": {"value": 1}})
         last_id = collection.find_one({"_id": "last_id"})["value"]
@@ -253,27 +274,6 @@ def on_write_request(ch, method, props, body):
             body=sync_data
         )
         ch.basic_ack(delivery_tag=method.delivery_tag)
-    elif(func_name == "sync_command"):
-        collection = dbState("syncQ")
-        commands = collection.find({"_id": {"$gte": 0}})
-        for i in commands:
-            i = json.dumps(i).encode()
-            ch.basic_publish(
-                exchange="syncQ",
-                routing_key="",
-                body=i
-            )
-        print("done serving sync command")
-        ch.basic_ack(delivery_tag=method.delivery_tag)
-    elif(func_name == "stop_consuming"):
-        print("entered stop consuming of worker")
-        ch.basic_ack(delivery_tag=method.delivery_tag)
-        print("ack sent")
-        ch.stop_consuming()
-        for i in ch.consumer_tags:
-            ch.basic_cancel(i)
-        ch.close()
-        connection.close()
 
 
 def on_sync_request(ch, method, props, body):
