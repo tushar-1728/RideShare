@@ -42,179 +42,146 @@ according to the given specifications.
 
 
 **Architecture of DBaas:**
-● The orchestrator will listen to incoming requests on port 80.
+● The orchestrator will listen to incoming requests on port 80.<br/>
 ● You will be using AMQP(Advanced Message Queue Protocol) using RabbitMQ as a
-message broker for this assignment.
-● The orchestrator is responsible for publishing the incoming message into the relevant
-queue and bringing up new worker containers as desired.
-● There will be four message queues named “readQ”, “writeQ”, “syncQ” and “responseQ”
-● All the read requests will be published to the readQ.
-● All the write requests will be published to the writeQ.
+message broker for this assignment.<br/>
+● The orchestrator is responsible for publishing the incoming message into the relevant<br/>
+queue and bringing up new worker containers as desired.<br/>
+● There will be four message queues named “readQ”, “writeQ”, “syncQ” and “responseQ”<br/>
+● All the read requests will be published to the readQ.<br/>
+● All the write requests will be published to the writeQ.<br/>
 ● There will be two types of workers running on the instance, “master” worker and
-“slave” worker.
-● The master worker will listen to the “writeQ”.
+“slave” worker.<br/>
+● The master worker will listen to the “writeQ”.<br/>
 ● It will pick up all incoming messages on the “writeQ” and actually write them to a
-persistent database.
+persistent database.<br/>
 ● The slave worker is responsible for responding to all the read requests coming to the
-DBaaS orchestrator.
+DBaaS orchestrator.<br/>
 ● The slave worker will be listening to the readQ, and picks up any messages on that
-queue.
+queue.<br/>
 ● Upon querying the database based on the request, the slave will write the output to the
 “responseQ”, which will then be picked up by the orchestrator, using the right type of
 exchange and correctly using channels. (See RPC example of RabbitMQ, instead of
-implementing in manually)
+implementing in manually)<br/>
 ● If there are multiple instances of the worker running, then the messages from the readQ
 must be picked up by the slave workers in a round robin fashion. (See. Worker Queues
-example of rabbitMQ, instead of implementing it from scratch.)
+example of rabbitMQ, instead of implementing it from scratch.)<br/>
 ● Each worker (slave and master) will have its own copy of the database. The database
-will not be shared among the workers.
+will not be shared among the workers.<br/>
 ● Separate database creates the problem of maintaining consistency between the various
-replicas of the same database.
+replicas of the same database.<br/>
 ● To solve this issue, you will use an “eventual consistency” model, where after a write
 has successfully been performed by the master worker, it must eventually be consistent
-with all the slave workers.
+with all the slave workers.<br/>
 ● For implementing eventual consistency, the master will write the new db writes on the
 “syncQ” after every write that master does, which will be picked up by the slaves to
-update their copy of the database to the lastest.
+update their copy of the database to the lastest.<br/>
 ● All the workers will run in their own containers, they will connect to a common
-rabbitMQ.
-● The orchestrator will also run in a container.
+rabbitMQ.<br/>
+● The orchestrator will also run in a container.<br/>
 ● DBaaS has to be highly available, hence all the workers will be “watched” for failure by
-zookeeper, a cluster coordination service.
-● In case of the failure of a slave, a new slave worker will be started.
+zookeeper, a cluster coordination service.<br/>
+● In case of the failure of a slave, a new slave worker will be started.<br/>
 ● In case of failure of the master, the existing slave, with the lowest pid of the container
 they are running in, will be elected as master, using zookeeper’s leader election. And
-upon that, a new slave node will be brought up by the orchestrator.
+upon that, a new slave node will be brought up by the orchestrator.<br/><br/>
 
 
 ● To save yourself from the hassle of installing/configuring zookeeper, you can use the
-official existing “Zookeeper” docker image from dockerhub.
-● Even for rabbitMQ, use the existing image.
-● The orchestrator will expose the API endpoints ‘api/v1/db/write’ and ‘api/v1/db/read’
+official existing “Zookeeper” docker image from dockerhub.<br/>
+● Even for rabbitMQ, use the existing image.<br/>
+● The orchestrator will expose the API endpoints ‘api/v1/db/write’ and ‘api/v1/db/read’<br/><br/>
 **High Availability:**
 Zookeeper will be used to “watch” on each worker.
-If a master fails:
+If a master fails:<br/><br/>
 ● A new master is elected amongst the existing slaves. The slave whose container has the
-lowest pid, is elected as the master.
+lowest pid, is elected as the master.<br/>
 ● A new slave worker is started and all the data is copied asynchronously to the new
-worker.
-If a slave worker fails:
-● A new slave worker is started.
-● All the data is copied to the new slave. asynchronously
+worker.<br/>
+If a slave worker fails:<br/>
+● A new slave worker is started.<br/>
+● All the data is copied to the new slave. asynchronously<br/><br/>
 **Scalability:**
 The orchestrator has to keep a count of all the incoming HTTP requests for the db read APIs. For
 now we will assume that most requests are read requests and hence the master worker does
-not need scaling out.
+not need scaling out.<br/>
 Do not count the request made to ‘crash API’ on the orchestrator.
 The auto scale timer has to begin after receiving the first request.
 After every two minutes, depending on how many requests were received, the orchestrator
 must increase/decrease the number of slave worker containers. The counter has to be reset
 every two minutes
-For auto-scaling count only db read APIs.
-0 – 20 requests – 1 slave container must be running
-21 – 40 requests – 2 slave containers must be running
-41 – 60 requests – 3 slave containers must be running
+For auto-scaling count only db read APIs.<br/><br/>
+0 – 20 requests – 1 slave container must be running<br/>
+21 – 40 requests – 2 slave containers must be running<br/>
+41 – 60 requests – 3 slave containers must be running<br/>
 And so on.
-
+<br/><br/>
 
 **Orchestrator:**
-● The orchestrator will be a flask application.
-● The orchestrator will be serving the endpoints ‘api/v1/db/read’ and ‘api/v1/db/write’.
+● The orchestrator will be a flask application.<br/>
+● The orchestrator will be serving the endpoints ‘api/v1/db/read’ and ‘api/v1/db/write’.<br/>
 ● Upon receiving a call to these APIs it will write relevant messages to the relevant
-queues.
+queues.<br/>
 ● From the users/rides container, you will now be calling the db read/write APIs on the
-DBaaS Vm instead of localhost.
-● You will also have to implement an API ‘api/v1/crash/master’ called over POST method
-o When this API is called the orchestrator will kill the master worker.
+DBaaS Vm instead of localhost.<br/>
+● You will also have to implement an API ‘api/v1/crash/master’ called over POST method<br/>
+o When this API is called the orchestrator will kill the master worker.<br/>
 ● Another API ‘api/v1/crash/slave’ also has to be implemented called over POST method
 o When this API is called, the slave whose container’s pid is the highest has to be
-killed.
+killed.<br/>
 ● Another API ‘api/v1/worker/list’, over a GET method has to be implemented.
 o The response of this API should be the sorted list of pid’s of the container’s of all
-the workers.
-o Eg, [ 1000, 2112, 4330 ]
+the workers.<br/>
+o Eg, [ 1000, 2112, 4330 ]<br/><br/>
 **Hints**
 ● Both the master and slave must run the same code, as any slave can be elected as the
-master.
-● Use docker sdk to start and stop new containers programmatically
+master.<br/>
+● Use docker sdk to start and stop new containers programmatically<br/>
 ● Use the db read/write API implementation from the first assignment to implement
-‘master` and the ‘slave’ workers.
+‘master` and the ‘slave’ workers.<br/>
 ● The ‘api/v1/db/read’ and ‘api/v1/db/write’ must only publish the request to the
-relevant queues and not write to db themselves
+relevant queues and not write to db themselves<br/>
 ● Crash APIs should return 200 OK with message body as​ ​[ "pid_of_container_killed" ]
 ● For syncing a new slave with all the data, you can use multiple techniques, a few of
-them could be
-o Making the message “durable” so they are not removed from the queue
+them could be<br/>
+o Making the message “durable” so they are not removed from the queue<br/>
 o Not sending “ack” from the consumers so the messages stay in the queue, so
 when a new slave joins becomes a consumer, they can get all the messages.
-o Or any other algorithm you find appropriate.
+o Or any other algorithm you find appropriate.<br/>
 ● Other than the given 4 queues, you can use any number of temporary queues at your
-discretion.
+discretion.<br/><br/>
 **Other points**
 You must keep the AWS setup that you created in your last assignment still running. The Users
 container must still be running on the Users EC2 instance, and the AWS Application Load
 Balancer must still perform the path-based load balancing before requests are ever received by
-the db container orchestrator.
+the db container orchestrator.<br/>
 
 
 The read write db requests from users/rides container will no longer go the ‘api/v1/db/read’
-API running on the localhost, but instead must go to the public IP of the DBaaS VM.
+API running on the localhost, but instead must go to the public IP of the DBaaS VM.<br/><br/>
 **● The rabbitMQ tutorial is a great place to start.**
-● Hello World, Worker Queues, RPC, Pub-Sub are few examples you must look at in the
-RabbitMQ tutorial, as you’ll be using those techniques in this project.
-● Initially you will start with 1 slave and 1 master worker.
+● Hello World, Worker Queues, RPC, Pub-Sub are few examples you must look at in the<br/>
+RabbitMQ tutorial, as you’ll be using those techniques in this project.<br/>
+● Initially you will start with 1 slave and 1 master worker.<br/>
 ● Zookeeper, RabbitMQ will both run in their own containers, their official image can be
-pulled from dockerhub.
+pulled from dockerhub.<br/>
 ● Hence initially you will be running 5 containers, for “zookeeper”, “rabbitmq”,
 “orchestrator”, “slave” and “master” which will then be increased/decreased
-accordingly.
-● Ideally you must be using “docker-compose” to orchestrate your containers.
+accordingly.<br/>
+● Ideally you must be using “docker-compose” to orchestrate your containers.<br/>
 ● For the project you will need to know a little more about the intricate ​details of AMQP
-like, queues, exchanges, channels, brokers​ etc.
+like, queues, exchanges, channels, brokers​ etc.<br/>
 **References:**
-Zookeeper: ​http://zookeeper.apache.org/
+Zookeeper: ​http://zookeeper.apache.org/<br/>
 Zookeeper:​https://www.allprogrammingtutorials.com/tutorials/leader-election-using-apache-zookeeper.php
 RabbitMQ: ​https://www.rabbitmq.com/getstarted.html​ **(Please go through tutorial 1, 2,3 and 6 and try
-to accomodate similar designs in the project)**
-AMQP: ​https://www.rabbitmq.com/tutorials/amqp-concepts.html
-RabbitMQ Channels: ​https://www.rabbitmq.com/channels.html
-Zookeeper Container Image: ​https://hub.docker.com/_/zookeeper/
-RabbitMQ Container Image: ​https://hub.docker.com/_/rabbitmq/
-Python binding for zookeeper: ​https://kazoo.readthedocs.io/en/latest/
-Docker sdk to start containers programmatically: ​https://docker-py.readthedocs.io/en/stable/
+to accomodate similar designs in the project)**<br/>
+AMQP: ​https://www.rabbitmq.com/tutorials/amqp-concepts.html<br/>
+RabbitMQ Channels: ​https://www.rabbitmq.com/channels.html<br/>
+Zookeeper Container Image: ​https://hub.docker.com/_/zookeeper/<br/>
+RabbitMQ Container Image: ​https://hub.docker.com/_/rabbitmq/<br/>
+Python binding for zookeeper: ​https://kazoo.readthedocs.io/en/latest/<br/>
+Docker sdk to start containers programmatically: ​https://docker-py.readthedocs.io/en/stable/<br/>
 
-
-**Due Date: Week of 19** ​ **th** ​ **April, 2020
-Marks: 25
-Distribution of marks
-Sl. no Feature Marks**
-1 Master/slave worker 5
-2 Orchestrator 3
-3 Setting up rabbitmq, with all the queues
-having correct producer and consumer
-
-### 3
-
-4 Perform data replica/sync 3
-5 Scale out/in 3
-6 Fault tolerance (slave + master) using
-Zookeeper with correct znodes and watch
-
-### 5
-
-7 Report - illustrating design and a list of all
-challenges your team had to solve
-
-### 3
-
-**Suggestion:**
-● Step 1: Implement the orchestrator with RabbitMQ
-● Step 2: Implement replication/sync
-● Step 3: Demonstrate scale out/in
-● Step 4: Implement High Availability using Zookeeper
-This way, you will always have a working project, and get partial marks in case some of the
-features are incomplete.
-Make sure that you have separate docker container images with each feature, to checkpoint
-your work.
 
 
