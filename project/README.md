@@ -58,7 +58,6 @@ A app deployed on AWS cloud capable of fault tolerance and load balancing
 
 ## IMPLEMENTATION
 
--
 ### RabbitMQ
 
 The message broker is implemented using AMQP-0-9-1 messaging protocol. Our messaging has basically 3 queues and 1 fanout exchange. One random queue is generated per slave worker which gets binded to fanout exchange.
@@ -71,12 +70,10 @@ The readQ is a modified RPC implementation using RabbitMQ tutorial 6. DBAAS orch
 
 Eventual consistency model used in our app so when the master worker is done with write operation it forwards the write request to all slave workers on the fanout exchange.
 
--
 ### Data Synchronization between Master and Slave workers
 
 For data synchronization we have used a separate database called syncQ. So whenever a write request comes to a master, it stores the request in the syncQ DB with an always increasing id. Now if a new slave comes up, it sends a sync request on the writeQ, the master responds by sending all the write requests stored in syncQ DB and based on id of each sync request sent the slaves update themselves. The slaves also update their own syncQ DB because it might be possible that they can become master later on.
 
--
 ### Zookeeper
 
 W ![](RackMultipart20200517-4-1hyh49p_html_e3151edf15d1d2f1.png)
@@ -84,7 +81,6 @@ W ![](RackMultipart20200517-4-1hyh49p_html_e3151edf15d1d2f1.png)
 
 We have a datawatch at the second level of master and slave. So whenever a master or slave crashes data is changed at the second level, then the datawatch gets activated and creates a new slave or converts a slave to master and creates a new slave. The conversion of slave to master happens by sending a &quot;change\_designation&quot; message to all the slaves and only the required slave responds as the message contains the pid of the acting slave also.
 
--
 ### Scaling Up/Down
 
 A timer runs in the background which gets activated when the first read request is received by the orchestrator and keeps count of all the requests received. The timer resets the read request count after every 2 minutes.
