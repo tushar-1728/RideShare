@@ -10,6 +10,7 @@ from math import ceil
 
 app = Flask(__name__)
 
+# creating connection to rabbitMQ server
 connection = pika.BlockingConnection(
     pika.ConnectionParameters(host='rmq', heartbeat=0)
 )
@@ -22,18 +23,24 @@ zk.start()
 
 # flag denoting whether the timer has started or no
 TIMER_START_FLAG = 0
+
 # variable which stores the count of all read requests made
 # gets incremented after each read request is received
 REQUEST_COUNT = 0
+
 # variable just used for naming the worker containers distinctly
 # incremented before creating every new worker
 WORKER_COUNT = 0
+
 # variable keeps count of all the masters running currently, for our case it is always 1
 MASTER_COUNT = 0
+
 # variable keeps count of all the slaves running currently
 SLAVE_COUNT = 0
+
 # list storing all the slave containers
 SLAVE_LIST = []
+
 # list storing all the master containers
 MASTER_LIST = []
 
@@ -184,6 +191,8 @@ def timer_func():
 
 
 # api 8
+# this api acts as end-point for performing all db-reads from mongoDB server
+# on first read the timer is started to count no. of read requests made every 2 minutes
 @app.route('/api/v1/db/read', methods=['GET'])
 def db_read():
     global REQUEST_COUNT
@@ -202,7 +211,8 @@ def db_read():
         timer.start()
 
     # the origin argument in the request body denotes which microservice called the db read api
-    # if condition segregating all db read apis coming from Rides microservice
+    # ORIGIN = RIDE => rides microservice
+    # ORIGIN = USER => users microservice
     if request.args.get('ORIGIN') == "RIDE":
         if request.args.get('COMMAND') == "Upcoming":
             source = request.args.get('source')
@@ -350,6 +360,7 @@ def db_write():
 
 
 # api list workers
+# iterates through master and slave list, gets pid of each container and returs in asscending order
 @app.route('/api/v1/worker/list', methods=['GET'])
 def get_worker_list():
     pid_list = []
@@ -364,6 +375,8 @@ def get_worker_list():
 
 
 # api crash slave
+# testing mechanism to check whether fault tolerance is working or not
+# kills the slave worker with highest pid
 @app.route('/api/v1/crash/slave', methods=['POST'])
 def crash_slave():
     pid_list = []
