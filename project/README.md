@@ -76,8 +76,7 @@ For data synchronization we have used a separate database called syncQ. So whene
 
 ### Zookeeper
 
-W ![](RackMultipart20200517-4-1hyh49p_html_e3151edf15d1d2f1.png)
- e have used Zookeeper for fault tolerance. We have created znode created in three levels.
+We have used Zookeeper for fault tolerance. We have created znode created in three levels.
 
 We have a datawatch at the second level of master and slave. So whenever a master or slave crashes data is changed at the second level, then the datawatch gets activated and creates a new slave or converts a slave to master and creates a new slave. The conversion of slave to master happens by sending a &quot;change\_designation&quot; message to all the slaves and only the required slave responds as the message contains the pid of the acting slave also.
 
@@ -105,22 +104,22 @@ While testing we encountered 204 No Content error, even when there existed a rid
 # Setup
 ## CREATING USERS AND RIDES CONTAINER
 
->>1: Goto folder user-ride in the project folder
+>1: Goto folder user-ride in the project folder
 
->>2: Create image python:pip using Dockerfile in that folder
+>2: Create image python:pip using Dockerfile in that folder
 
->>3: Goto folder user inside user-ride folder, run users container using docker-compose file
+>3: Goto folder user inside user-ride folder, run users container using docker-compose file
 
->>4: Goto folder ride inside user-ride folder, run rides container using docker-compose file
+>4: Goto folder ride inside user-ride folder, run rides container using docker-compose file
 
 ## CREATING DBASS CONTAINER
 
->>0: Goto dbaas folder in the project folder
+>0: Goto dbaas folder in the project folder
 
->>1: Goto orch-docker folder, create python:project image using Dockerfile in that folder
+>1: Goto orch-docker folder, create python:project image using Dockerfile in that folder
 
->>2: Goto work-docker folder, create python:worker image using Dockerfile in that folder
+>2: Goto work-docker folder, create python:worker image using Dockerfile in that folder
 
->>3: Now goto orchestrator folder, create worker:latest image using Dockerfile_worker in that folder
+>3: Now goto orchestrator folder, create worker:latest image using Dockerfile_worker in that folder
 
->>4: Run the dbaas container using docker-compose file in project folder
+>4: Run the dbaas container using docker-compose file in project folder
